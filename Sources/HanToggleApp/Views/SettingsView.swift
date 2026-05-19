@@ -21,8 +21,7 @@ struct SettingsView: View {
             }
 
             Section("Launch") {
-                LabeledContent("Launch at login", value: "Available after packaging")
-                    .foregroundStyle(.secondary)
+                Toggle("Launch at login", isOn: launchAtLoginBinding)
             }
 
             Section("Permissions") {
@@ -58,6 +57,15 @@ struct SettingsView: View {
                 settings.showMenuBarStatus = newValue
                 state.updateShowMenuBarStatus(newValue)
                 appDelegate?.applySettings()
+            }
+        )
+    }
+
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { state.launchAtLogin },
+            set: { newValue in
+                _ = appDelegate?.setLaunchAtLogin(newValue)
             }
         )
     }

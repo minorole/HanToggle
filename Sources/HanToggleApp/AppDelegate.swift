@@ -2,10 +2,26 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let settings = AppSettings()
+    private let settings: AppSettings
+    private let state: AppState
     private let hotkeyManager = HotkeyManager()
     private let permissionManager = AccessibilityPermissionManager()
+    private let launchAtLoginManager: any LaunchAtLoginManaging
     private var textReplacementService: TextReplacementService?
+
+    override init() {
+        self.settings = AppSettings()
+        self.launchAtLoginManager = LaunchAtLoginManager()
+        self.state = .shared
+        super.init()
+    }
+
+    init(settings: AppSettings, launchAtLoginManager: any LaunchAtLoginManaging, state: AppState) {
+        self.settings = settings
+        self.launchAtLoginManager = launchAtLoginManager
+        self.state = state
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -20,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             textReplacementService = try TextReplacementService(permissionManager: permissionManager)
             applySettings()
         } catch {
-            appState.setError(error.localizedDescription)
+            state.setError(error.localizedDescription)
         }
     }
 
@@ -50,40 +66,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startHotkey()
     }
 
+    func setLaunchAtLogin(_ enabled: Bool) -> Bool {
+        do {
+            try launchAtLoginManager.setEnabled(enabled)
+            settings.launchAtLogin = enabled
+            state.updateLaunchAtLogin(enabled)
+            return true
+        } catch {
+            state.updateLaunchAtLogin(settings.launchAtLogin)
+            state.setError("HanToggle could not update Launch at Login.")
+            return false
+        }
+    }
+
     func toggleSelection() {
-        guard AppState.shared.canToggleSelection else {
-            AppState.shared.setError("Accessibility permission is required before HanToggle can convert selected text.")
+        guard state.canToggleSelection else {
+            state.setError("Accessibility permission is required before HanToggle can convert selected text.")
             return
         }
 
         guard let textReplacementService else {
-            AppState.shared.setError(TextReplacementError.converterInitializationFailed.localizedDescription)
+            state.setError(TextReplacementError.converterInitializationFailed.localizedDescription)
             return
         }
 
         Task { @MainActor in
             do {
                 let result = try await textReplacementService.toggleSelection()
-                AppState.shared.updateAfterToggle(result)
+                self.state.updateAfterToggle(result)
             } catch {
-                AppState.shared.setError(error.localizedDescription)
+                self.state.setError(error.localizedDescription)
             }
         }
     }
 
     private func startHotkey() {
         let hotkey = settings.hotkey
-        AppState.shared.updateHotkeyDisplayName(hotkey.displayName)
+        state.updateHotkeyDisplayName(hotkey.displayName)
 
         do {
             try hotkeyManager.start(hotkey: hotkey)
         } catch {
-            AppState.shared.setError(error.localizedDescription)
+            state.setError(error.localizedDescription)
         }
     }
 
     private func refreshSettingsState() {
-        AppState.shared.updateSettings(
+        state.updateSettings(
             hotkeyDisplayName: settings.hotkey.displayName,
             showMenuBarStatus: settings.showMenuBarStatus,
             launchAtLogin: settings.launchAtLogin
