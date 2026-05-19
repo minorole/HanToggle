@@ -17,6 +17,10 @@ let package = Package(
             name: "hantoggle",
             targets: ["HanToggleCLI"]
         ),
+        .executable(
+            name: "HanToggleApp",
+            targets: ["HanToggleApp"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/ddddxxx/SwiftyOpenCC.git", exact: "2.0.0-beta"),
@@ -32,6 +36,20 @@ let package = Package(
         .executableTarget(
             name: "HanToggleCLI",
             dependencies: ["HanToggle"]
+        ),
+        .executableTarget(
+            name: "HanToggleApp",
+            dependencies: ["HanToggle"],
+            exclude: [
+                "Resources/Info.plist",
+                "Resources/HanToggle.entitlements",
+            ],
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+                .linkedFramework("Carbon"),
+                .linkedFramework("CoreGraphics"),
+                .linkedFramework("ServiceManagement"),
+            ]
         ),
         .testTarget(
             name: "HanToggleTests",
