@@ -37,8 +37,8 @@ final class AppKitSetupWindowPresenter: SetupWindowPresenting {
         setupWindow.title = "Set up HanToggle"
         setupWindow.styleMask = [.titled, .closable, .miniaturizable]
         setupWindow.isReleasedWhenClosed = false
-        setupWindow.setContentSize(NSSize(width: 560, height: 520))
-        setupWindow.contentMinSize = NSSize(width: 520, height: 420)
+        setupWindow.setContentSize(NSSize(width: 580, height: 560))
+        setupWindow.contentMinSize = NSSize(width: 540, height: 500)
         setupWindow.center()
 
         return setupWindow

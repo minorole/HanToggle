@@ -9,13 +9,16 @@ struct SetupAssistantView: View {
         VStack(alignment: .leading, spacing: 18) {
             header
             Divider()
-            permissionSection
-            hotkeySection
+            accessibilityRow
+            Divider()
+            shortcutRow
+            Divider()
+            conversionTestRow
             Divider()
             footer
         }
         .padding(24)
-        .frame(width: 560)
+        .frame(width: 580)
     }
 
     private var header: some View {
@@ -24,93 +27,102 @@ struct SetupAssistantView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Text("HanToggle runs from the menu bar after setup.")
+            Text("Enable access, confirm the shortcut, and test local conversion.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("Use the menu-bar icon for Settings and Quit.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text(state.setupStatusTitle)
-                .font(.headline)
-
-            Text(state.setupPrimaryMessage)
                 .foregroundStyle(.secondary)
         }
     }
 
-    private var permissionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Accessibility")
-                .font(.headline)
-
-            LabeledContent("Status", value: state.accessibilityStatusLabel)
-
-            if let lastError = state.lastError {
-                Text(lastError)
-                    .foregroundStyle(.red)
-            }
-
-            Text(accessibilityGuidanceText)
-                .foregroundStyle(.secondary)
-
-            Button("Open Accessibility Settings") {
-                appDelegate?.openAccessibilitySettings()
-            }
-        }
-    }
-
-    private var hotkeySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Keyboard Shortcut")
-                .font(.headline)
-
-            LabeledContent("Current shortcut", value: state.hotkeyDisplayName)
-
-            if state.hasActiveHotkey {
-                Text("Shortcut is ready.")
-                    .foregroundStyle(.secondary)
-            } else if let hotkeyRecordingError = state.hotkeyRecordingError {
-                Text(hotkeyRecordingError)
-                    .foregroundStyle(.red)
-            }
-
-            if isRecordingHotkey {
-                HotkeyRecorderView(
-                    onHotkeyCaptured: { hotkey in
-                        if appDelegate?.setHotkey(hotkey) == true {
-                            isRecordingHotkey = false
-                        }
-                    },
-                    onCancel: {
-                        isRecordingHotkey = false
-                        state.setHotkeyRecordingError(nil)
-                    }
-                )
-                .frame(width: 1, height: 1)
-
-                HStack {
-                    Text("Press new shortcut...")
-                        .foregroundStyle(.secondary)
-
-                    Button("Cancel") {
-                        isRecordingHotkey = false
-                        state.setHotkeyRecordingError(nil)
-                    }
-
-                    Button("Reset") {
-                        if appDelegate?.resetHotkeyToDefault() == true {
-                            isRecordingHotkey = false
-                            state.setHotkeyRecordingError(nil)
-                        }
-                    }
+    private var accessibilityRow: some View {
+        SetupChecklistRow(
+            title: "Accessibility",
+            message: accessibilityGuidanceText,
+            state: state.accessibilityStatus == .trusted ? .ready : .needsAction
+        ) {
+            if state.accessibilityStatus != .trusted {
+                Button("Open Accessibility Settings") {
+                    appDelegate?.openAccessibilitySettings()
                 }
-            } else {
-                Button("Change Shortcut") {
-                    isRecordingHotkey = true
+            }
+        }
+    }
+
+    private var shortcutRow: some View {
+        SetupChecklistRow(
+            title: "Keyboard Shortcut",
+            message: shortcutRowMessage,
+            state: shortcutRowState
+        ) {
+            ShortcutRecorderControl(
+                displayName: state.hotkeyDisplayName,
+                errorMessage: state.hotkeyRecordingError,
+                isRecording: $isRecordingHotkey,
+                onHotkeyCaptured: { hotkey in
+                    appDelegate?.setHotkey(hotkey) == true
+                },
+                onCancel: {
                     state.setHotkeyRecordingError(nil)
+                },
+                onReset: {
+                    appDelegate?.resetHotkeyToDefault() == true
                 }
+            )
+        }
+    }
+
+    private var conversionTestRow: some View {
+        SetupChecklistRow(
+            title: "Test Conversion",
+            message: conversionTestMessage,
+            state: conversionTestRowState
+        ) {
+            ConversionTestView(status: state.conversionTestStatus) {
+                appDelegate?.runConversionTest()
             }
+        }
+    }
+
+    private var shortcutRowMessage: String {
+        if isRecordingHotkey {
+            return "Press the shortcut you want to use."
+        }
+
+        if state.hasActiveHotkey {
+            return "Current shortcut: \(state.hotkeyDisplayName)"
+        }
+
+        return state.hotkeyRecordingError ?? "Choose a keyboard shortcut before completing setup."
+    }
+
+    private var shortcutRowState: SetupChecklistRowState {
+        if isRecordingHotkey {
+            return .inProgress
+        }
+
+        return state.hasActiveHotkey ? .ready : .needsAction
+    }
+
+    private var conversionTestMessage: String {
+        switch state.conversionTestStatus {
+        case .notRun:
+            "Confirm the local converter works before finishing setup."
+        case .running:
+            "Testing local conversion..."
+        case .passed:
+            "Local conversion is working."
+        case .failed(let message):
+            message
+        }
+    }
+
+    private var conversionTestRowState: SetupChecklistRowState {
+        switch state.conversionTestStatus {
+        case .passed:
+            .ready
+        case .running:
+            .inProgress
+        case .notRun, .failed:
+            .needsAction
         }
     }
 
