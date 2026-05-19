@@ -128,6 +128,24 @@ struct HotkeyManagerTests {
         #expect(registrar.registered.map(\.hotkey) == [.default, candidate])
         #expect(registrar.unregistered.count == 1)
     }
+
+    @Test("failed test registration removes handler when no active hotkey exists")
+    func failedTestRegistrationRemovesHandlerWhenNoActiveHotkeyExists() throws {
+        let registrar = FakeHotkeyRegistrar()
+        let manager = HotkeyManager(registrar: registrar)
+        registrar.nextRegistrationError = OSStatus(eventHotKeyExistsErr)
+
+        do {
+            try manager.testRegistration(hotkey: .default)
+            Issue.record("Expected registration failure.")
+        } catch HotkeyManagerError.hotkeyRegistrationFailed(let hotkey, let status) {
+            #expect(hotkey == GlobalHotkey.default.displayName)
+            #expect(status == OSStatus(eventHotKeyExistsErr))
+        }
+
+        #expect(manager.activeHotkey == nil)
+        #expect(manager.isEventHandlerInstalledForTesting == false)
+    }
 }
 
 private struct FakeRegistration {

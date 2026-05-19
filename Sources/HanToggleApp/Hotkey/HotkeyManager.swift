@@ -150,8 +150,17 @@ final class HotkeyManager: HotkeyManaging {
 
     func testRegistration(hotkey: GlobalHotkey) throws {
         try installHandlerIfNeeded()
+        let hadActiveRegistration = activeRegistration != nil
         let hotkeyID = EventHotKeyID(signature: HotkeyManager.hotkeySignature, id: 1)
-        let candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+        let candidate: HotkeyRegistration
+        do {
+            candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+        } catch {
+            if !hadActiveRegistration {
+                removeEventHandlerIfNeeded()
+            }
+            throw error
+        }
         try registrar.unregister(candidate.token)
     }
 
