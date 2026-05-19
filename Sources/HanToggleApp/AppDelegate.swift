@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let launchAtLoginManager: any LaunchAtLoginManaging
     private let settingsWindowPresenter: any SettingsWindowPresenting
     private let setupWindowPresenter: any SetupWindowPresenting
+    private let conversionTestServiceFactory: () throws -> ConversionTestService
     private var textReplacementService: TextReplacementService?
 
     override init() {
@@ -21,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.state = .shared
         self.settingsWindowPresenter = AppKitSettingsWindowPresenter(state: self.state)
         self.setupWindowPresenter = AppKitSetupWindowPresenter(state: self.state)
+        self.conversionTestServiceFactory = { try ConversionTestService() }
         super.init()
         Self.shared = self
     }
@@ -31,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state: AppState,
         hotkeyManager: any HotkeyManaging = HotkeyManager(),
         permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager(),
+        conversionTestServiceFactory: @escaping () throws -> ConversionTestService = { try ConversionTestService() },
         settingsWindowPresenter: (any SettingsWindowPresenting)? = nil,
         setupWindowPresenter: (any SetupWindowPresenting)? = nil
     ) {
@@ -38,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.launchAtLoginManager = launchAtLoginManager
         self.hotkeyManager = hotkeyManager
         self.permissionManager = permissionManager
+        self.conversionTestServiceFactory = conversionTestServiceFactory
         self.state = state
         self.settingsWindowPresenter = settingsWindowPresenter ?? AppKitSettingsWindowPresenter(state: state)
         self.setupWindowPresenter = setupWindowPresenter ?? AppKitSetupWindowPresenter(state: state)
@@ -122,12 +126,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func toggleSelection() {
         guard state.canToggleSelection else {
-            state.setError("Accessibility permission is required before HanToggle can convert selected text.")
+            state.setIssue(.accessibilityRequired())
             return
         }
 
         guard let textReplacementService else {
-            state.setError(TextReplacementError.converterInitializationFailed.localizedDescription)
+            state.setIssue(AppIssue(textReplacementError: .converterInitializationFailed))
             return
         }
 
@@ -135,9 +139,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 let result = try await textReplacementService.toggleSelection()
                 self.state.updateAfterToggle(result)
+            } catch let error as TextReplacementError {
+                self.state.setIssue(AppIssue(textReplacementError: error))
             } catch {
-                self.state.setError(error.localizedDescription)
+                self.state.setIssue(.general(error.localizedDescription))
             }
+        }
+    }
+
+    func runConversionTest() {
+        state.updateConversionTestStatus(.running)
+
+        do {
+            let service = try conversionTestServiceFactory()
+            let result = service.runSampleTest()
+            state.updateConversionTestResult(result)
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription
+                ?? "HanToggle could not start the Chinese text converter."
+            state.updateConversionTestStatus(.failed(message))
         }
     }
 
@@ -165,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if hotkeyManager.activeHotkey == nil {
                 state.markHotkeyInactive(conflictMessage)
+                state.setIssue(.hotkeyConflict(conflictMessage))
             }
             return false
         }
@@ -176,6 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if hotkeyManager.activeHotkey == nil {
                 state.markHotkeyInactive(conflictMessage)
+                state.setIssue(.hotkeyConflict(conflictMessage))
             }
             return false
         }
@@ -238,6 +260,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             hotkeyManager.stop()
             let message = validation.errorMessage ?? "Choose another shortcut."
             state.markHotkeyInactive(message)
+            state.setIssue(.hotkeyInvalid(message))
             return
         }
 
@@ -246,6 +269,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state.updateShowMenuBarItem(settings.showMenuBarItem)
         } catch {
             state.markHotkeyInactive(error.localizedDescription)
+            state.setIssue(.hotkeyInvalid(error.localizedDescription))
             state.updateShowMenuBarItem(true)
         }
     }

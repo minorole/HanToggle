@@ -27,6 +27,7 @@ struct AppDelegateHotkeyValidationTests {
         appDelegate.applySettings()
 
         #expect(hotkeyManager.startCalls == [])
+        #expect(state.currentIssue?.kind == .hotkeyInvalid)
         #expect(state.lastError == "This key is reserved for system navigation or text input. Choose another shortcut.")
     }
 
@@ -53,6 +54,7 @@ struct AppDelegateHotkeyValidationTests {
 
         #expect(hotkeyManager.startCalls == [GlobalHotkey(keyCode: 11, modifiers: [.control, .option])])
         #expect(hotkeyManager.stopCalls == 1)
+        #expect(state.currentIssue?.kind == .hotkeyInvalid)
         #expect(state.lastError == "This key is reserved for system navigation or text input. Choose another shortcut.")
     }
 
@@ -106,6 +108,7 @@ struct AppDelegateHotkeyValidationTests {
         #expect(settings.hotkey == persistedCandidate)
         #expect(state.hotkeyRecordingError == conflictMessage)
         #expect(state.lastError == conflictMessage)
+        #expect(state.currentIssue?.kind == .hotkeyConflict)
         #expect(!state.hasActiveHotkey)
         #expect(hotkeyManager.testRegistrationCalls == [candidate])
         #expect(hotkeyManager.startCalls == [])
@@ -135,6 +138,7 @@ struct AppDelegateHotkeyValidationTests {
         #expect(settings.hotkey == persistedCandidate)
         #expect(state.hotkeyRecordingError == conflictMessage)
         #expect(state.lastError == conflictMessage)
+        #expect(state.currentIssue?.kind == .hotkeyConflict)
         #expect(!state.hasActiveHotkey)
         #expect(hotkeyManager.testRegistrationCalls == [candidate])
         #expect(hotkeyManager.startCalls == [candidate])
