@@ -1,11 +1,15 @@
 import Foundation
+import HanToggle
 
 @MainActor
 final class AppState: ObservableObject {
+    static let shared = AppState()
+
     @Published private(set) var statusMessage = "Starting HanToggle..."
     @Published private(set) var lastError: String?
     @Published private(set) var isAccessibilityTrusted = false
     @Published private(set) var canUseAccessibilityEvents = false
+    @Published private(set) var lastDirection: ToggleDirection = .unchanged
 
     var canToggleSelection: Bool {
         isAccessibilityTrusted && canUseAccessibilityEvents
@@ -34,7 +38,21 @@ final class AppState: ObservableObject {
             setError("Accessibility permission is required. Enable HanToggle in System Settings > Privacy & Security > Accessibility.")
         }
     }
+
+    func updateAfterToggle(_ result: ToggleResult) {
+        lastDirection = result.direction
+        lastError = nil
+
+        switch result.direction {
+        case .simplifiedToTraditional:
+            statusMessage = "Converted to Traditional"
+        case .traditionalToSimplified:
+            statusMessage = "Converted to Simplified"
+        case .unchanged:
+            statusMessage = "Ready"
+        }
+    }
 }
 
 @MainActor
-let appState = AppState()
+let appState = AppState.shared

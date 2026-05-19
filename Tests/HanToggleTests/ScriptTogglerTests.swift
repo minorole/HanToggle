@@ -48,3 +48,19 @@ import Testing
     #expect(result.direction == .simplifiedToTraditional)
     #expect(result.text == "Convert: 這句話 is selected.")
 }
+
+@Test func initializesSafelyFromConcurrentTasks() async throws {
+    try await withThrowingTaskGroup(of: Bool.self) { group in
+        for _ in 0..<24 {
+            group.addTask {
+                let toggler = try ScriptToggler()
+                let result = toggler.toggle("这句话是简体中文。")
+                return result.direction == .simplifiedToTraditional && result.text == "這句話是簡體中文。"
+            }
+        }
+
+        for try await didConvert in group {
+            #expect(didConvert)
+        }
+    }
+}

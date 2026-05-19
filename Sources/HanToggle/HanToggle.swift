@@ -1,23 +1,34 @@
 import Foundation
 import OpenCC
 
-public enum ToggleDirection: Equatable {
+public enum ToggleDirection: Equatable, Sendable {
     case simplifiedToTraditional
     case traditionalToSimplified
     case unchanged
 }
 
-public struct ToggleResult: Equatable {
+public struct ToggleResult: Equatable, Sendable {
     public let text: String
     public let direction: ToggleDirection
     public let changedCharacterCount: Int
+
+    public init(text: String, direction: ToggleDirection, changedCharacterCount: Int) {
+        self.text = text
+        self.direction = direction
+        self.changedCharacterCount = changedCharacterCount
+    }
 }
 
 public final class ScriptToggler {
+    private static let converterInitializationLock = NSLock()
+
     private let traditionalConverter: ChineseConverter
     private let simplifiedConverter: ChineseConverter
 
     public init() throws {
+        Self.converterInitializationLock.lock()
+        defer { Self.converterInitializationLock.unlock() }
+
         traditionalConverter = try ChineseConverter(options: [.traditionalize, .twStandard, .twIdiom])
         simplifiedConverter = try ChineseConverter(options: [.simplify, .twStandard, .twIdiom])
     }
