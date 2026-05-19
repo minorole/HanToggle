@@ -160,6 +160,9 @@ struct AppDelegateLaunchAtLoginTests {
         #expect(!didComplete)
         #expect(!settings.hasCompletedSetup)
         #expect(setupPresenter.closeSetupWindowCalls == 0)
+        #expect(state.currentIssue?.kind == .accessibilityRequired)
+        #expect(state.currentIssue?.recoveryActions == [.openAccessibilitySettings, .openSetup])
+        #expect(state.lastError == "Enable HanToggle in System Settings > Privacy & Security > Accessibility.")
     }
 
     @Test("setup completion closes setup when app is ready")

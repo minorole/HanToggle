@@ -193,7 +193,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshAccessibilityState(prompt: false)
 
         guard state.canCompleteSetup else {
-            state.setError(state.setupPrimaryMessage)
+            if state.accessibilityStatus == .trusted {
+                state.setError(state.setupPrimaryMessage)
+            }
             setupWindowPresenter.showSetupWindow()
             return false
         }
