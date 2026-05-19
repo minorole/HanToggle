@@ -23,8 +23,16 @@ struct GlobalHotkeyTests {
 
     @Test("display name falls back to key code for unknown keys")
     func fallbackDisplayName() {
-        let hotkey = GlobalHotkey(keyCode: 42, modifiers: [.control])
+        let hotkey = GlobalHotkey(keyCode: 999, modifiers: [.control])
 
-        #expect(hotkey.displayName == "Control-Key 42")
+        #expect(hotkey.displayName == "Control-Key 999")
+    }
+
+    @Test("known key names include common letters and function keys")
+    func knownKeyNames() {
+        #expect(GlobalHotkey(keyCode: 0, modifiers: [.command]).displayName == "Command-A")
+        #expect(GlobalHotkey(keyCode: 8, modifiers: [.command]).displayName == "Command-C")
+        #expect(GlobalHotkey(keyCode: 9, modifiers: [.command]).displayName == "Command-V")
+        #expect(GlobalHotkey(keyCode: 122, modifiers: [.control]).displayName == "Control-F1")
     }
 }
