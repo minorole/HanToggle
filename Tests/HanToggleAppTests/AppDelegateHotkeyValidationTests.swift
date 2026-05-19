@@ -356,6 +356,8 @@ struct AppDelegateHotkeyValidationTests {
         #expect(state.showMenuBarItem == true)
         #expect(!state.hasActiveHotkey)
         #expect(state.lastError != nil)
+        #expect(state.currentIssue?.kind == .hotkeyConflict)
+        #expect(state.currentIssue?.recoveryActions == [.changeShortcut])
     }
 
     private func makeDefaults() -> UserDefaults {

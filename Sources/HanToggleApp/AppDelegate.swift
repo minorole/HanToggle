@@ -269,7 +269,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state.updateShowMenuBarItem(settings.showMenuBarItem)
         } catch {
             state.markHotkeyInactive(error.localizedDescription)
-            state.setIssue(.hotkeyInvalid(error.localizedDescription))
+            state.setIssue(.hotkeyConflict(error.localizedDescription))
             state.updateShowMenuBarItem(true)
         }
     }
