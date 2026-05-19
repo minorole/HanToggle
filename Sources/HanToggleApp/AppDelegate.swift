@@ -177,9 +177,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             try hotkeyManager.start(hotkey: hotkey)
+            state.updateShowMenuBarItem(settings.showMenuBarItem)
         } catch {
             state.markHotkeyInactive(error.localizedDescription)
-            settings.showMenuBarItem = true
             state.updateShowMenuBarItem(true)
         }
     }

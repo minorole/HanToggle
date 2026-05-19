@@ -1,5 +1,5 @@
-import Testing
 import Foundation
+import Testing
 @testable import HanToggleApp
 
 @MainActor
@@ -309,6 +309,51 @@ struct AppDelegateHotkeyValidationTests {
         #expect(settings.hotkey == validCandidate)
     }
 
+    @Test("saved hidden menu bar preference is restored after startup hotkey succeeds")
+    func hiddenMenuBarPreferenceIsRestoredAfterStartupHotkeySucceeds() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let hotkeyManager = FakeHotkeyManager()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: hotkeyManager,
+            permissionManager: FakeAccessibilityPermissionManager()
+        )
+
+        appDelegate.applySettings()
+
+        #expect(settings.showMenuBarItem == false)
+        #expect(state.showMenuBarItem == false)
+        #expect(state.hasActiveHotkey)
+        #expect(hotkeyManager.startCalls == [settings.hotkey])
+    }
+
+    @Test("startup hotkey failure shows menu bar without overwriting hidden preference")
+    func startupHotkeyFailureDoesNotOverwriteHiddenMenuBarPreference() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(startError: SettableTestError.startFailed),
+            permissionManager: FakeAccessibilityPermissionManager()
+        )
+
+        appDelegate.applySettings()
+
+        #expect(settings.showMenuBarItem == false)
+        #expect(state.showMenuBarItem == true)
+        #expect(!state.hasActiveHotkey)
+        #expect(state.lastError != nil)
+    }
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -365,6 +410,14 @@ private final class FakeHotkeyManager: HotkeyManaging {
 
 private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
     func setEnabled(_ enabled: Bool) throws {}
+}
+
+private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
+    func status(prompt: Bool) -> AccessibilityPermissionStatus {
+        .trusted
+    }
+
+    func openAccessibilitySettings() {}
 }
 
 private enum SettableTestError: Error {

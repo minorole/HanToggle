@@ -91,7 +91,7 @@ struct SettingsView: View {
             get: { state.showMenuBarItem },
             set: { newValue in
                 let settings = AppSettings()
-                let allowedValue = newValue || state.hasActiveHotkey
+                let allowedValue = newValue || !state.hasActiveHotkey
                 settings.showMenuBarItem = allowedValue
                 state.updateShowMenuBarItem(allowedValue)
                 appDelegate?.applySettings()
