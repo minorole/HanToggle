@@ -25,6 +25,72 @@ struct TextReplacementServiceTests {
         #expect(keyboard.pasteCallCount == 0)
     }
 
+    @Test("empty copied selection restores clipboard and reports no selected text")
+    func emptyCopiedSelectionRestoresClipboard() async throws {
+        let pasteboard = makePasteboard()
+        Self.setString("original", on: pasteboard)
+        let keyboard = FakeKeyboardEventSender()
+        keyboard.onCopy = {
+            pasteboard.clearContents()
+        }
+        let service = try makeService(pasteboard: pasteboard, keyboardEventSender: keyboard)
+
+        await expectTextReplacementError(.noSelectedChineseTextFoundOrUnchangedSelection) {
+            _ = try await service.toggleSelection()
+        }
+
+        #expect(pasteboard.string(forType: .string) == "original")
+        #expect(keyboard.copyCallCount == 1)
+        #expect(keyboard.pasteCallCount == 0)
+    }
+
+    @Test("non Chinese selection restores clipboard and does not paste")
+    func nonChineseSelectionRestoresClipboard() async throws {
+        let pasteboard = makePasteboard()
+        Self.setString("original", on: pasteboard)
+        let keyboard = FakeKeyboardEventSender()
+        keyboard.onCopy = {
+            Self.setString("plain English", on: pasteboard)
+        }
+        let service = try makeService(pasteboard: pasteboard, keyboardEventSender: keyboard)
+
+        await expectTextReplacementError(.noSelectedChineseTextFoundOrUnchangedSelection) {
+            _ = try await service.toggleSelection()
+        }
+
+        #expect(pasteboard.string(forType: .string) == "original")
+        #expect(keyboard.copyCallCount == 1)
+        #expect(keyboard.pasteCallCount == 0)
+    }
+
+    @Test("missing accessibility permission does not snapshot or mutate clipboard")
+    func missingPermissionDoesNotTouchClipboard() async throws {
+        let pasteboard = makePasteboard()
+        Self.setString("original", on: pasteboard)
+        let keyboard = FakeKeyboardEventSender()
+        var didCaptureSnapshot = false
+        let service = try TextReplacementService(
+            permissionManager: FakePermissionManager(permissionStatus: .notTrusted),
+            keyboardEventSender: keyboard,
+            pasteboard: pasteboard,
+            copyDelay: .zero,
+            pasteDelay: .zero,
+            snapshotCapture: { pasteboard in
+                didCaptureSnapshot = true
+                return PasteboardSnapshot(from: pasteboard)
+            }
+        )
+
+        await expectTextReplacementError(.missingAccessibilityPermission) {
+            _ = try await service.toggleSelection()
+        }
+
+        #expect(!didCaptureSnapshot)
+        #expect(pasteboard.string(forType: .string) == "original")
+        #expect(keyboard.copyCallCount == 0)
+        #expect(keyboard.pasteCallCount == 0)
+    }
+
     @Test("incomplete snapshot prevents pasteboard mutation")
     func incompleteSnapshotPreventsMutation() async throws {
         let pasteboard = makePasteboard()
