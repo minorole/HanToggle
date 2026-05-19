@@ -117,6 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .valid:
             break
         case .invalid:
+            hotkeyManager.stop()
             state.setError(validation.errorMessage ?? "Choose another shortcut.")
             return
         }

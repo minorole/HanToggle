@@ -2,7 +2,7 @@ import Carbon
 import Foundation
 
 @MainActor
-protocol HotkeyManaging {
+protocol HotkeyManaging: AnyObject {
     var onHotkey: (() -> Void)? { get set }
     func start(hotkey: GlobalHotkey) throws
     func stop()
