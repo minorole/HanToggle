@@ -178,6 +178,7 @@ struct AppDelegateLaunchAtLoginTests {
         )
         appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
         state.confirmHotkeyActive("Control-Option-H")
+        state.updateConversionTestStatus(.passed)
 
         let didComplete = appDelegate.completeSetup()
 
@@ -202,6 +203,7 @@ struct AppDelegateLaunchAtLoginTests {
             setupWindowPresenter: setupPresenter
         )
         appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        state.updateConversionTestStatus(.passed)
         #expect(state.showMenuBarItem)
 
         let didComplete = appDelegate.completeSetup()
