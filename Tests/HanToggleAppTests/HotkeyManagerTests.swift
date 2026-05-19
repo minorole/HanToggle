@@ -38,6 +38,65 @@ struct HotkeyManagerTests {
         #expect(registrar.unregistered.count == 0)
     }
 
+    @Test("starting with active hotkey is idempotent")
+    func idempotentStartSkipsReregistration() throws {
+        let registrar = FakeHotkeyRegistrar()
+        let manager = HotkeyManager(registrar: registrar)
+        try manager.start(hotkey: .default)
+        let previousRegisteredCount = registrar.registered.count
+        let previousUnregisterCount = registrar.unregistered.count
+
+        try manager.start(hotkey: .default)
+
+        #expect(manager.activeHotkey == .default)
+        #expect(registrar.registered.count == previousRegisteredCount)
+        #expect(registrar.unregistered.count == previousUnregisterCount)
+    }
+
+    @Test("old hotkey unregister failure triggers replacement failure and cleanup attempt")
+    func oldUnregisterFailureRollsBackCandidate() throws {
+        let registrar = FakeHotkeyRegistrar()
+        let manager = HotkeyManager(registrar: registrar)
+        try manager.start(hotkey: .default)
+
+        let replacement = GlobalHotkey(keyCode: 17, modifiers: [.command, .shift])
+        registrar.nextUnregistrationErrors = [OSStatus(1)]
+
+        do {
+            try manager.start(hotkey: replacement)
+            Issue.record("Expected old-hotkey-unregister failure.")
+        } catch HotkeyManagerError.hotkeyReplacementFailed(let hotkey, let status) {
+            #expect(hotkey == replacement.displayName)
+            #expect(status == OSStatus(1))
+        }
+
+        #expect(manager.activeHotkey == .default)
+        #expect(registrar.unregistered.count == 1)
+        #expect(registrar.registered.map(\.hotkey) == [.default, replacement])
+    }
+
+    @Test("old hotkey unregister failure with candidate cleanup failure surfaces cleanup error")
+    func oldUnregisterFailureWithCleanupFailureReturnsExplicitError() throws {
+        let registrar = FakeHotkeyRegistrar()
+        let manager = HotkeyManager(registrar: registrar)
+        try manager.start(hotkey: .default)
+
+        let replacement = GlobalHotkey(keyCode: 17, modifiers: [.command, .shift])
+        registrar.nextUnregistrationErrors = [OSStatus(1), OSStatus(2)]
+
+        do {
+            try manager.start(hotkey: replacement)
+            Issue.record("Expected cleanup failure during hotkey replacement.")
+        } catch HotkeyManagerError.hotkeyReplacementCleanupFailed(let hotkey, let originalStatus, let cleanupStatus) {
+            #expect(hotkey == replacement.displayName)
+            #expect(originalStatus == OSStatus(1))
+            #expect(cleanupStatus == OSStatus(2))
+        }
+
+        #expect(manager.activeHotkey == .default)
+        #expect(registrar.unregistered.count == 0)
+    }
+
     @Test("test registration unregisters probe and does not replace active hotkey")
     func testRegistrationDoesNotReplaceActiveHotkey() throws {
         let registrar = FakeHotkeyRegistrar()
@@ -53,15 +112,17 @@ struct HotkeyManagerTests {
     }
 }
 
-private struct FakeRegistration: Equatable {
+private struct FakeRegistration {
     let hotkey: GlobalHotkey
     let options: UInt32
+    let token: HotkeyRegistrationToken
 }
 
 private final class FakeHotkeyRegistrar: HotkeyRegistering {
     private(set) var registered: [FakeRegistration] = []
     private(set) var unregistered: [HotkeyRegistrationToken] = []
     var nextRegistrationError: OSStatus = noErr
+    var nextUnregistrationErrors: [OSStatus] = []
 
     func register(
         hotkey: GlobalHotkey,
@@ -75,11 +136,18 @@ private final class FakeHotkeyRegistrar: HotkeyRegistering {
             throw HotkeyRegistrarError.registrationFailed(status: nextRegistrationError)
         }
 
-        registered.append(FakeRegistration(hotkey: hotkey, options: options))
-        return HotkeyRegistrationToken(rawPointer: OpaquePointer(bitPattern: registered.count)!)
+        let token = HotkeyRegistrationToken(rawPointer: OpaquePointer(bitPattern: registered.count + 1)!)
+        registered.append(FakeRegistration(hotkey: hotkey, options: options, token: token))
+        return token
     }
 
     func unregister(_ token: HotkeyRegistrationToken) throws {
+        let nextStatus = nextUnregistrationErrors.isEmpty ? noErr : nextUnregistrationErrors.removeFirst()
+
+        if nextStatus != noErr {
+            throw HotkeyRegistrarError.unregistrationFailed(status: nextStatus)
+        }
+
         unregistered.append(token)
     }
 }

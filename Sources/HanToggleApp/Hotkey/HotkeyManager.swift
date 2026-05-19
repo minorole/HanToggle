@@ -96,18 +96,41 @@ final class HotkeyManager: HotkeyManaging {
     }
 
     func start(hotkey: GlobalHotkey) throws {
+        if hotkey == activeHotkey {
+            return
+        }
+
         try installHandlerIfNeeded()
 
         let hotkeyID = EventHotKeyID(signature: HotkeyManager.hotkeySignature, id: 1)
         let candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+        let previousRegistration = activeRegistration
 
         do {
-            if let activeRegistration {
-                try registrar.unregister(activeRegistration.token)
+            if let previousRegistration {
+                try registrar.unregister(previousRegistration.token)
             }
         } catch {
-            try? registrar.unregister(candidate.token)
-            throw mapRegistrarError(error, hotkey: hotkey)
+            guard let previousStatus = unregistrationStatus(from: error) else {
+                throw error
+            }
+            do {
+                try registrar.unregister(candidate.token)
+            } catch {
+                guard let cleanupStatus = unregistrationStatus(from: error) else {
+                    throw error
+                }
+                throw HotkeyManagerError.hotkeyReplacementCleanupFailed(
+                    hotkey: hotkey.displayName,
+                    originalStatus: previousStatus,
+                    cleanupStatus: cleanupStatus
+                )
+            }
+
+            throw HotkeyManagerError.hotkeyReplacementFailed(
+                hotkey: hotkey.displayName,
+                status: previousStatus
+            )
         }
 
         activeHotkey = hotkey
@@ -186,6 +209,14 @@ final class HotkeyManager: HotkeyManaging {
         }
     }
 
+    private func unregistrationStatus(from error: Error) -> OSStatus? {
+        guard case let .unregistrationFailed(status) = error as? HotkeyRegistrarError else {
+            return nil
+        }
+
+        return status
+    }
+
     private func handlePressedHotkey(_ hotkeyID: EventHotKeyID) {
         guard let activeRegistration,
               hotkeyID.signature == activeRegistration.id.signature,
@@ -231,6 +262,8 @@ final class HotkeyManager: HotkeyManaging {
 enum HotkeyManagerError: LocalizedError {
     case eventHandlerInstallationFailed(status: OSStatus)
     case hotkeyRegistrationFailed(hotkey: String, status: OSStatus)
+    case hotkeyReplacementFailed(hotkey: String, status: OSStatus)
+    case hotkeyReplacementCleanupFailed(hotkey: String, originalStatus: OSStatus, cleanupStatus: OSStatus)
 
     var errorDescription: String? {
         switch self {
@@ -238,6 +271,10 @@ enum HotkeyManagerError: LocalizedError {
             "HanToggle could not install the global hotkey event handler. macOS returned status \(status)."
         case .hotkeyRegistrationFailed(let hotkey, let status):
             "HanToggle could not register the \(hotkey) global hotkey. It may already be used by another app. macOS returned status \(status)."
+        case .hotkeyReplacementFailed(let hotkey, let status):
+            "HanToggle could not replace the \(hotkey) global hotkey. It could not remove the previous registration (status \(status))."
+        case .hotkeyReplacementCleanupFailed(let hotkey, let originalStatus, let cleanupStatus):
+            "HanToggle could not replace the \(hotkey) global hotkey. Old hotkey unregistration status \(originalStatus), rollback cleanup status \(cleanupStatus)."
         }
     }
 }
