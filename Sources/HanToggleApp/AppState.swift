@@ -73,10 +73,15 @@ final class AppState: ObservableObject {
     }
 
     func confirmHotkeyActive(_ displayName: String) {
+        let previousHotkeyError = hotkeyRecordingError
+
         hotkeyDisplayName = displayName
         hasActiveHotkey = true
         hotkeyRecordingError = nil
-        setReady()
+
+        if lastError == nil || lastError == previousHotkeyError {
+            setReady()
+        }
     }
 
     func setHotkeyRecordingError(_ error: String?) {

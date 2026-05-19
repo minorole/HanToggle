@@ -66,6 +66,22 @@ struct AppStateTests {
         #expect(state.hotkeyRecordingError == nil)
     }
 
+    @Test("hotkey confirmation keeps unrelated global error state")
+    func hotkeyConfirmationKeepsUnrelatedGlobalErrorState() {
+        let state = AppState()
+        let accessibilityMessage = "Accessibility permission is required."
+
+        state.setError(accessibilityMessage)
+        state.setHotkeyRecordingError("This shortcut is already in use or reserved by macOS. Choose another shortcut.")
+        state.confirmHotkeyActive("Command-Shift-T")
+
+        #expect(state.hotkeyDisplayName == "Command-Shift-T")
+        #expect(state.lastError == accessibilityMessage)
+        #expect(state.statusMessage == "HanToggle needs attention")
+        #expect(state.hasActiveHotkey)
+        #expect(state.hotkeyRecordingError == nil)
+    }
+
     @Test("marking hotkey inactive sets global error state")
     func markHotkeyInactiveSetsErrorState() {
         let state = AppState()

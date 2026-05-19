@@ -105,6 +105,8 @@ struct AppDelegateHotkeyValidationTests {
         #expect(!didSet)
         #expect(settings.hotkey == persistedCandidate)
         #expect(state.hotkeyRecordingError == conflictMessage)
+        #expect(state.lastError == conflictMessage)
+        #expect(!state.hasActiveHotkey)
         #expect(hotkeyManager.testRegistrationCalls == [candidate])
         #expect(hotkeyManager.startCalls == [])
         #expect(hotkeyManager.callHistory == ["test(\(candidate.displayName))"])
@@ -171,6 +173,70 @@ struct AppDelegateHotkeyValidationTests {
             "test(\(candidate.displayName))",
             "start(\(candidate.displayName))"
         ])
+    }
+
+    @Test("successful candidate keeps unrelated global error state")
+    func successfulCandidateKeepsUnrelatedGlobalErrorState() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let hotkeyManager = FakeHotkeyManager()
+        let state = AppState()
+        let accessibilityMessage = "Accessibility permission is required."
+
+        state.setError(accessibilityMessage)
+
+        let candidate = GlobalHotkey(keyCode: 2, modifiers: [.command])
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(candidate)
+
+        #expect(didSet)
+        #expect(settings.hotkey == candidate)
+        #expect(state.lastError == accessibilityMessage)
+        #expect(state.statusMessage == "HanToggle needs attention")
+        #expect(state.hotkeyRecordingError == nil)
+        #expect(state.hotkeyDisplayName == candidate.displayName)
+        #expect(hotkeyManager.callHistory == [
+            "test(\(candidate.displayName))",
+            "start(\(candidate.displayName))"
+        ])
+    }
+
+    @Test("already active candidate is idempotent and does not probe")
+    func alreadyActiveCandidateIsIdempotent() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let activeHotkey = settings.hotkey
+        let hotkeyManager = FakeHotkeyManager(
+            testRegistrationError: SettableTestError.registrationFailed,
+            startError: SettableTestError.startFailed,
+            activeHotkey: activeHotkey
+        )
+        let state = AppState()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(activeHotkey)
+
+        #expect(didSet)
+        #expect(settings.hotkey == activeHotkey)
+        #expect(state.hotkeyDisplayName == activeHotkey.displayName)
+        #expect(state.hotkeyRecordingError == nil)
+        #expect(state.hasActiveHotkey)
+        #expect(hotkeyManager.testRegistrationCalls == [])
+        #expect(hotkeyManager.startCalls == [])
+        #expect(hotkeyManager.callHistory == [])
     }
 
     @Test("successful candidate clears prior global hotkey error")

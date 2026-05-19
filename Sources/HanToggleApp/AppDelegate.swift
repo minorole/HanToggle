@@ -119,10 +119,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return false
         }
 
+        if candidate == settings.hotkey, candidate == hotkeyManager.activeHotkey {
+            state.confirmHotkeyActive(candidate.displayName)
+            return true
+        }
+
         do {
             try hotkeyManager.testRegistration(hotkey: candidate)
         } catch {
             state.setHotkeyRecordingError(conflictMessage)
+
+            if hotkeyManager.activeHotkey == nil {
+                state.markHotkeyInactive(conflictMessage)
+            }
             return false
         }
 
