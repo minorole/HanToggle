@@ -62,10 +62,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state.setTextReplacementServiceReady(true)
             applySettings()
             reconcileSetupPresentation()
+        } catch let error as TextReplacementError {
+            state.setTextReplacementServiceReady(false)
+            reconcileSetupPresentation()
+            state.setIssue(AppIssue(textReplacementError: error))
         } catch {
             state.setTextReplacementServiceReady(false)
             reconcileSetupPresentation()
-            state.setError(error.localizedDescription)
+            state.setIssue(AppIssue(textReplacementError: .converterInitializationFailed))
         }
     }
 
@@ -216,7 +220,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard state.canCompleteSetup else {
             if state.accessibilityStatus == .trusted {
-                state.setError(state.setupPrimaryMessage)
+                if !state.isTextReplacementServiceReady {
+                    state.setIssue(AppIssue(textReplacementError: .converterInitializationFailed))
+                } else {
+                    state.setError(state.setupPrimaryMessage)
+                }
             }
             setupWindowPresenter.showSetupWindow()
             return false

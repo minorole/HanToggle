@@ -239,6 +239,8 @@ struct AppDelegateLaunchAtLoginTests {
         #expect(!settings.hasCompletedSetup)
         #expect(setupPresenter.closeSetupWindowCalls == 0)
         #expect(state.lastError == TextReplacementError.converterInitializationFailed.localizedDescription)
+        #expect(state.currentIssue?.kind == .converterUnavailable)
+        #expect(state.currentIssue?.recoveryActions == [.openSettings])
     }
 
     @Test("initialized app delegate is available to menu views")
