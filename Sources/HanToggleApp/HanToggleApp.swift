@@ -7,7 +7,10 @@ struct HanToggleApp: App {
     @StateObject private var state = appState
 
     var body: some Scene {
-        MenuBarExtra {
+        MenuBarExtra(isInserted: Binding(
+            get: { state.showMenuBarItem },
+            set: { state.updateShowMenuBarItem($0) }
+        )) {
             StatusMenuView()
                 .environmentObject(state)
         } label: {

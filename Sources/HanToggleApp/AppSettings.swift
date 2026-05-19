@@ -3,7 +3,8 @@ import Foundation
 struct AppSettings {
     private enum Key {
         static let hotkey = "hotkey"
-        static let showMenuBarStatus = "showMenuBarStatus"
+        static let showMenuBarItem = "showMenuBarItem"
+        static let legacyShowMenuBarStatus = "showMenuBarStatus"
         static let launchAtLogin = "launchAtLogin"
     }
 
@@ -28,16 +29,20 @@ struct AppSettings {
         }
     }
 
-    var showMenuBarStatus: Bool {
+    var showMenuBarItem: Bool {
         get {
-            guard defaults.object(forKey: Key.showMenuBarStatus) != nil else {
-                return true
+            if defaults.object(forKey: Key.showMenuBarItem) != nil {
+                return defaults.bool(forKey: Key.showMenuBarItem)
             }
 
-            return defaults.bool(forKey: Key.showMenuBarStatus)
+            if defaults.object(forKey: Key.legacyShowMenuBarStatus) != nil {
+                return defaults.bool(forKey: Key.legacyShowMenuBarStatus)
+            }
+
+            return true
         }
         nonmutating set {
-            defaults.set(newValue, forKey: Key.showMenuBarStatus)
+            defaults.set(newValue, forKey: Key.showMenuBarItem)
         }
     }
 

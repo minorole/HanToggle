@@ -53,8 +53,8 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Visibility") {
-                Toggle("Show menu-bar status", isOn: showMenuBarStatusBinding)
+            Section("Menu Bar") {
+                Toggle("Show HanToggle in menu bar", isOn: showMenuBarItemBinding)
             }
 
             Section("Launch") {
@@ -86,13 +86,14 @@ struct SettingsView: View {
         .frame(width: 460)
     }
 
-    private var showMenuBarStatusBinding: Binding<Bool> {
+    private var showMenuBarItemBinding: Binding<Bool> {
         Binding(
-            get: { state.showMenuBarStatus },
+            get: { state.showMenuBarItem },
             set: { newValue in
                 let settings = AppSettings()
-                settings.showMenuBarStatus = newValue
-                state.updateShowMenuBarStatus(newValue)
+                let allowedValue = newValue || state.hasActiveHotkey
+                settings.showMenuBarItem = allowedValue
+                state.updateShowMenuBarItem(allowedValue)
                 appDelegate?.applySettings()
             }
         )

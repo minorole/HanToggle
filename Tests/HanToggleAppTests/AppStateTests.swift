@@ -101,29 +101,51 @@ struct AppStateTests {
 
         state.updateSettings(
             hotkeyDisplayName: "Control-Option-H",
-            showMenuBarStatus: false,
+            showMenuBarItem: false,
             launchAtLogin: true
         )
 
         #expect(state.hotkeyDisplayName == "Control-Option-H")
-        #expect(!state.showMenuBarStatus)
+        #expect(state.showMenuBarItem)
         #expect(state.launchAtLogin)
     }
 
-    @Test("menu bar visibility can be updated independently")
+    @Test("menu bar can be hidden with active hotkey")
+    func menuBarCanHideWithActiveHotkey() {
+        let state = AppState()
+        state.updateHotkeyDisplayName("Control-Option-H")
+
+        state.updateShowMenuBarItem(false)
+
+        #expect(!state.showMenuBarItem)
+    }
+
+    @Test("menu bar visibility can be updated when no guard is needed")
     func updateMenuBarVisibility() {
         let state = AppState()
 
-        state.updateShowMenuBarStatus(false)
+        state.updateHotkeyDisplayName("Control-Option-H")
+        state.updateShowMenuBarItem(false)
 
-        #expect(!state.showMenuBarStatus)
+        #expect(!state.showMenuBarItem)
+    }
+
+    @Test("menu bar cannot be hidden without active hotkey")
+    func menuBarCannotHideWithoutActiveHotkey() {
+        let state = AppState()
+        state.markHotkeyInactive("Hotkey unavailable")
+
+        state.updateShowMenuBarItem(false)
+
+        #expect(state.showMenuBarItem)
     }
 
     @Test("hidden menu bar status keeps the menu item quiet during errors")
     func hiddenMenuBarStatusKeepsMenuItemQuiet() {
         let state = AppState()
 
-        state.updateShowMenuBarStatus(false)
+        state.updateHotkeyDisplayName("Control-Option-H")
+        state.updateShowMenuBarItem(false)
         state.setError("Accessibility permission is required.")
 
         #expect(state.menuBarSystemImageName == "character.textbox")

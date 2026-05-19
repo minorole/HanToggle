@@ -5,7 +5,7 @@ struct StatusMenuView: View {
     @EnvironmentObject private var state: AppState
 
     var body: some View {
-        if state.showMenuBarStatus {
+        if state.showMenuBarItem {
             Label(state.statusMessage, systemImage: statusIconName)
         } else {
             Label("HanToggle", systemImage: "character.textbox")

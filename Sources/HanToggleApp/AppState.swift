@@ -14,7 +14,7 @@ final class AppState: ObservableObject {
     @Published private(set) var hotkeyDisplayName = GlobalHotkey.default.displayName
     @Published private(set) var hotkeyRecordingError: String?
     @Published private(set) var hasActiveHotkey = false
-    @Published private(set) var showMenuBarStatus = true
+    @Published private(set) var showMenuBarItem = true
     @Published private(set) var launchAtLogin = false
 
     private var lastErrorSource: ErrorSource?
@@ -24,7 +24,7 @@ final class AppState: ObservableObject {
     }
 
     var menuBarSystemImageName: String {
-        guard showMenuBarStatus, lastError != nil else {
+        guard showMenuBarItem, lastError != nil else {
             return "character.textbox"
         }
 
@@ -107,14 +107,19 @@ final class AppState: ObservableObject {
         hotkeyRecordingError = message
     }
 
-    func updateSettings(hotkeyDisplayName: String, showMenuBarStatus: Bool, launchAtLogin: Bool) {
+    func updateSettings(hotkeyDisplayName: String, showMenuBarItem: Bool, launchAtLogin: Bool) {
         self.hotkeyDisplayName = hotkeyDisplayName
-        self.showMenuBarStatus = showMenuBarStatus
+        updateShowMenuBarItem(showMenuBarItem)
         self.launchAtLogin = launchAtLogin
     }
 
-    func updateShowMenuBarStatus(_ showMenuBarStatus: Bool) {
-        self.showMenuBarStatus = showMenuBarStatus
+    func updateShowMenuBarItem(_ showMenuBarItem: Bool) {
+        guard showMenuBarItem || hasActiveHotkey else {
+            self.showMenuBarItem = true
+            return
+        }
+
+        self.showMenuBarItem = showMenuBarItem
     }
 
     func updateLaunchAtLogin(_ launchAtLogin: Bool) {

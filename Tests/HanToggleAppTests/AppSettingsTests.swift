@@ -9,7 +9,7 @@ struct AppSettingsTests {
         let settings = AppSettings(defaults: makeDefaults())
 
         #expect(settings.hotkey == .default)
-        #expect(settings.showMenuBarStatus)
+        #expect(settings.showMenuBarItem)
         #expect(!settings.launchAtLogin)
     }
 
@@ -19,14 +19,24 @@ struct AppSettingsTests {
         let settings = AppSettings(defaults: defaults)
 
         settings.hotkey = GlobalHotkey(keyCode: 17, modifiers: [.command, .shift])
-        settings.showMenuBarStatus = false
+        settings.showMenuBarItem = false
         settings.launchAtLogin = true
 
         let reloaded = AppSettings(defaults: defaults)
 
         #expect(reloaded.hotkey == GlobalHotkey(keyCode: 17, modifiers: [.command, .shift]))
-        #expect(!reloaded.showMenuBarStatus)
+        #expect(!reloaded.showMenuBarItem)
         #expect(reloaded.launchAtLogin)
+    }
+
+    @Test("old menu bar status setting migrates to menu bar item setting")
+    func menuBarSettingMigration() {
+        let defaults = makeDefaults()
+        defaults.set(false, forKey: "showMenuBarStatus")
+
+        let settings = AppSettings(defaults: defaults)
+
+        #expect(!settings.showMenuBarItem)
     }
 
     private func makeDefaults() -> UserDefaults {

@@ -179,13 +179,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try hotkeyManager.start(hotkey: hotkey)
         } catch {
             state.markHotkeyInactive(error.localizedDescription)
+            settings.showMenuBarItem = true
+            state.updateShowMenuBarItem(true)
         }
     }
 
     private func refreshSettingsState() {
         state.updateSettings(
             hotkeyDisplayName: settings.hotkey.displayName,
-            showMenuBarStatus: settings.showMenuBarStatus,
+            showMenuBarItem: settings.showMenuBarItem,
             launchAtLogin: settings.launchAtLogin
         )
     }
