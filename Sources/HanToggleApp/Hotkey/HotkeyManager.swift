@@ -4,17 +4,90 @@ import Foundation
 @MainActor
 protocol HotkeyManaging: AnyObject {
     var onHotkey: (() -> Void)? { get set }
+    var activeHotkey: GlobalHotkey? { get }
     func start(hotkey: GlobalHotkey) throws
+    func testRegistration(hotkey: GlobalHotkey) throws
     func stop()
+}
+
+extension HotkeyManaging {
+    var activeHotkey: GlobalHotkey? { nil }
+
+    func testRegistration(hotkey: GlobalHotkey) throws {}
+}
+
+struct HotkeyRegistrationToken {
+    fileprivate let hotkeyRef: OpaquePointer
+
+    init(hotkeyRef: EventHotKeyRef) {
+        self.hotkeyRef = hotkeyRef
+    }
+
+    init(rawPointer: OpaquePointer) {
+        self.hotkeyRef = rawPointer
+    }
+}
+
+protocol HotkeyRegistering {
+    func register(hotkey: GlobalHotkey, options: UInt32, hotkeyID: EventHotKeyID) throws -> HotkeyRegistrationToken
+    func unregister(_ token: HotkeyRegistrationToken) throws
+}
+
+enum HotkeyRegistrarError: LocalizedError {
+    case registrationFailed(status: OSStatus)
+    case unregistrationFailed(status: OSStatus)
+
+    var errorDescription: String? {
+        switch self {
+        case .registrationFailed(let status):
+            "Could not register hotkey with Carbon. macOS returned status \(status)."
+        case .unregistrationFailed(let status):
+            "Could not unregister hotkey with Carbon. macOS returned status \(status)."
+        }
+    }
+}
+
+final class CarbonHotkeyRegistrar: HotkeyRegistering {
+    func register(hotkey: GlobalHotkey, options: UInt32, hotkeyID: EventHotKeyID) throws -> HotkeyRegistrationToken {
+        var hotkeyRef: EventHotKeyRef?
+
+        let status = RegisterEventHotKey(
+            hotkey.keyCode,
+            hotkey.carbonModifierFlags,
+            hotkeyID,
+            GetApplicationEventTarget(),
+            options,
+            &hotkeyRef
+        )
+
+        guard status == noErr, let hotkeyRef else {
+            throw HotkeyRegistrarError.registrationFailed(status: status)
+        }
+
+        return HotkeyRegistrationToken(hotkeyRef: hotkeyRef)
+    }
+
+    func unregister(_ token: HotkeyRegistrationToken) throws {
+        let status = UnregisterEventHotKey(token.hotkeyRef)
+        guard status == noErr else {
+            throw HotkeyRegistrarError.unregistrationFailed(status: status)
+        }
+    }
 }
 
 @MainActor
 final class HotkeyManager: HotkeyManaging {
+    var activeHotkey: GlobalHotkey?
+
+    private var activeRegistration: HotkeyRegistration?
     var onHotkey: (() -> Void)?
 
     private var eventHandler: EventHandlerRef?
-    private var eventHotkey: EventHotKeyRef?
-    private var registeredHotkeyID: EventHotKeyID?
+    private let registrar: HotkeyRegistering
+
+    init(registrar: HotkeyRegistering = CarbonHotkeyRegistrar()) {
+        self.registrar = registrar
+    }
 
     deinit {
         MainActor.assumeIsolated {
@@ -23,7 +96,48 @@ final class HotkeyManager: HotkeyManaging {
     }
 
     func start(hotkey: GlobalHotkey) throws {
-        stop()
+        try installHandlerIfNeeded()
+
+        let hotkeyID = EventHotKeyID(signature: HotkeyManager.hotkeySignature, id: 1)
+        let candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+
+        do {
+            if let activeRegistration {
+                try registrar.unregister(activeRegistration.token)
+            }
+        } catch {
+            try? registrar.unregister(candidate.token)
+            throw mapRegistrarError(error, hotkey: hotkey)
+        }
+
+        activeHotkey = hotkey
+        self.activeRegistration = candidate
+    }
+
+    func testRegistration(hotkey: GlobalHotkey) throws {
+        try installHandlerIfNeeded()
+        let hotkeyID = EventHotKeyID(signature: HotkeyManager.hotkeySignature, id: 1)
+        let candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+        try registrar.unregister(candidate.token)
+    }
+
+    func stop() {
+        if let activeRegistration {
+            try? registrar.unregister(activeRegistration.token)
+            self.activeRegistration = nil
+            activeHotkey = nil
+        }
+
+        if let eventHandler {
+            RemoveEventHandler(eventHandler)
+            self.eventHandler = nil
+        }
+    }
+
+    private func installHandlerIfNeeded() throws {
+        guard eventHandler == nil else {
+            return
+        }
 
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         var handlerRef: EventHandlerRef?
@@ -41,47 +155,42 @@ final class HotkeyManager: HotkeyManaging {
         }
 
         eventHandler = handlerRef
-
-        let hotkeyID = EventHotKeyID(signature: HotkeyManager.hotkeySignature, id: 1)
-        var hotkeyRef: EventHotKeyRef?
-        let registerStatus = RegisterEventHotKey(
-            hotkey.keyCode,
-            hotkey.carbonModifierFlags,
-            hotkeyID,
-            GetApplicationEventTarget(),
-            0,
-            &hotkeyRef
-        )
-
-        guard registerStatus == noErr, let hotkeyRef else {
-            stop()
-            throw HotkeyManagerError.hotkeyRegistrationFailed(hotkey: hotkey.displayName, status: registerStatus)
-        }
-
-        eventHotkey = hotkeyRef
-        registeredHotkeyID = hotkeyID
     }
 
-    func stop() {
-        if let eventHotkey {
-            UnregisterEventHotKey(eventHotkey)
-            self.eventHotkey = nil
+    private struct HotkeyRegistration {
+        let token: HotkeyRegistrationToken
+        let hotkey: GlobalHotkey
+        let id: EventHotKeyID
+    }
+
+    private func register(
+        hotkey: GlobalHotkey,
+        hotkeyID: EventHotKeyID
+    ) throws -> HotkeyRegistration {
+        do {
+            let token = try registrar.register(hotkey: hotkey, options: UInt32(kEventHotKeyExclusive), hotkeyID: hotkeyID)
+            return HotkeyRegistration(token: token, hotkey: hotkey, id: hotkeyID)
+        } catch {
+            throw mapRegistrarError(error, hotkey: hotkey)
+        }
+    }
+
+    private func mapRegistrarError(_ error: Error, hotkey: GlobalHotkey) -> Error {
+        guard let registrarError = error as? HotkeyRegistrarError else {
+            return error
         }
 
-        if let eventHandler {
-            RemoveEventHandler(eventHandler)
-            self.eventHandler = nil
+        switch registrarError {
+        case .registrationFailed(let status), .unregistrationFailed(let status):
+            return HotkeyManagerError.hotkeyRegistrationFailed(hotkey: hotkey.displayName, status: status)
         }
-
-        registeredHotkeyID = nil
     }
 
     private func handlePressedHotkey(_ hotkeyID: EventHotKeyID) {
-        guard hotkeyID.signature == registeredHotkeyID?.signature,
-              hotkeyID.id == registeredHotkeyID?.id
-        else {
-            return
-        }
+        guard let activeRegistration,
+              hotkeyID.signature == activeRegistration.id.signature,
+              hotkeyID.id == activeRegistration.id.id
+        else { return }
 
         onHotkey?()
     }
