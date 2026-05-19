@@ -1,5 +1,8 @@
 .DS_Store
 AGENTS.md
+.agents/
+.codex/
+docs/superpowers/
 /.build
 /Packages
 xcuserdata/
