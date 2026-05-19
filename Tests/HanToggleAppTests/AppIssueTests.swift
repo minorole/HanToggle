@@ -21,6 +21,13 @@ struct AppIssueTests {
         #expect(AppIssue(textReplacementError: .clipboardRestoreFailed).kind == .clipboardRestoreFailed)
         #expect(AppIssue(textReplacementError: .converterInitializationFailed).kind == .converterUnavailable)
         #expect(AppIssue(textReplacementError: .replacementAlreadyInProgress).kind == .replacementAlreadyInProgress)
+        #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).kind == .accessibilityRequired)
+        #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).severity == .blocking)
+        #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).recoveryActions == [.openAccessibilitySettings, .openSetup])
+        #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).kind == .copyFailed)
+        #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).severity == .blocking)
+        #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).recoveryActions == [.openSettings])
+        #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).hint == "HanToggle did not change selected text because it could not safely preserve the current clipboard.")
     }
 
     @Test("clipboard restore failure is blocking and tells user to open settings")
