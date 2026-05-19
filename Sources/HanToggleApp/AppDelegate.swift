@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        refreshSettingsState()
         refreshAccessibilityState(prompt: false)
 
         hotkeyManager.onHotkey = { [weak self] in
@@ -17,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             textReplacementService = try TextReplacementService(permissionManager: permissionManager)
-            startHotkey()
+            applySettings()
         } catch {
             appState.setError(error.localizedDescription)
         }
@@ -32,6 +33,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let canUseEvents = permissionManager.canCreateEventTap()
 
         appState.updateAccessibility(trusted: trusted, canUseEvents: canUseEvents)
+    }
+
+    func requestAccessibilityPermission() {
+        refreshAccessibilityState(prompt: true)
+    }
+
+    func openAccessibilitySettings() {
+        permissionManager.openAccessibilitySettings()
+        refreshAccessibilityState(prompt: false)
+    }
+
+    func applySettings() {
+        refreshSettingsState()
+        refreshAccessibilityState(prompt: false)
+        startHotkey()
     }
 
     func toggleSelection() {
@@ -64,5 +80,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             AppState.shared.setError(error.localizedDescription)
         }
+    }
+
+    private func refreshSettingsState() {
+        AppState.shared.updateSettings(
+            hotkeyDisplayName: settings.hotkey.displayName,
+            showMenuBarStatus: settings.showMenuBarStatus,
+            launchAtLogin: settings.launchAtLogin
+        )
     }
 }

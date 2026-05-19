@@ -12,6 +12,40 @@ struct AppStateTests {
         #expect(state.hotkeyDisplayName == GlobalHotkey.default.displayName)
     }
 
+    @Test("settings snapshot is loaded into app state")
+    func updateSettings() {
+        let state = AppState()
+
+        state.updateSettings(
+            hotkeyDisplayName: "Control-Option-H",
+            showMenuBarStatus: false,
+            launchAtLogin: true
+        )
+
+        #expect(state.hotkeyDisplayName == "Control-Option-H")
+        #expect(!state.showMenuBarStatus)
+        #expect(state.launchAtLogin)
+    }
+
+    @Test("menu bar visibility can be updated independently")
+    func updateMenuBarVisibility() {
+        let state = AppState()
+
+        state.updateShowMenuBarStatus(false)
+
+        #expect(!state.showMenuBarStatus)
+    }
+
+    @Test("hidden menu bar status keeps the menu item quiet during errors")
+    func hiddenMenuBarStatusKeepsMenuItemQuiet() {
+        let state = AppState()
+
+        state.updateShowMenuBarStatus(false)
+        state.setError("Accessibility permission is required.")
+
+        #expect(state.menuBarSystemImageName == "character.textbox")
+    }
+
     @Test("update after toggle records direction and Traditional status")
     func updateAfterSimplifiedToTraditionalToggle() {
         let state = AppState()

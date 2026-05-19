@@ -11,9 +11,19 @@ final class AppState: ObservableObject {
     @Published private(set) var canUseAccessibilityEvents = false
     @Published private(set) var lastDirection: ToggleDirection = .unchanged
     @Published private(set) var hotkeyDisplayName = GlobalHotkey.default.displayName
+    @Published private(set) var showMenuBarStatus = true
+    @Published private(set) var launchAtLogin = false
 
     var canToggleSelection: Bool {
         isAccessibilityTrusted && canUseAccessibilityEvents
+    }
+
+    var menuBarSystemImageName: String {
+        guard showMenuBarStatus, lastError != nil else {
+            return "character.textbox"
+        }
+
+        return "exclamationmark.triangle"
     }
 
     func setReady() {
@@ -56,6 +66,20 @@ final class AppState: ObservableObject {
 
     func updateHotkeyDisplayName(_ displayName: String) {
         hotkeyDisplayName = displayName
+    }
+
+    func updateSettings(hotkeyDisplayName: String, showMenuBarStatus: Bool, launchAtLogin: Bool) {
+        self.hotkeyDisplayName = hotkeyDisplayName
+        self.showMenuBarStatus = showMenuBarStatus
+        self.launchAtLogin = launchAtLogin
+    }
+
+    func updateShowMenuBarStatus(_ showMenuBarStatus: Bool) {
+        self.showMenuBarStatus = showMenuBarStatus
+    }
+
+    func updateLaunchAtLogin(_ launchAtLogin: Bool) {
+        self.launchAtLogin = launchAtLogin
     }
 }
 
