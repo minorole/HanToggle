@@ -271,6 +271,44 @@ struct AppDelegateHotkeyValidationTests {
         ])
     }
 
+    @Test("successful candidate clears stale global hotkey error after a different recorder error")
+    func successfulCandidateClearsStaleHotkeyErrorAfterDifferentRecorderError() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let failingHotkeyManager = FakeHotkeyManager(testRegistrationError: SettableTestError.registrationFailed)
+        let state = AppState()
+        let invalidCandidate = GlobalHotkey(keyCode: 53, modifiers: [.control])
+        let validCandidate = GlobalHotkey(keyCode: 2, modifiers: [.command])
+
+        let failingDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: failingHotkeyManager
+        )
+
+        #expect(!failingDelegate.setHotkey(validCandidate))
+        #expect(!failingDelegate.setHotkey(invalidCandidate))
+        #expect(state.lastError == conflictMessage)
+        #expect(state.hotkeyRecordingError == "This key is reserved for system navigation or text input. Choose another shortcut.")
+
+        let succeedingDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: FakeHotkeyManager()
+        )
+
+        let didSet = succeedingDelegate.setHotkey(validCandidate)
+
+        #expect(didSet)
+        #expect(state.lastError == nil)
+        #expect(state.statusMessage == "HanToggle is ready")
+        #expect(state.hotkeyRecordingError == nil)
+        #expect(settings.hotkey == validCandidate)
+    }
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

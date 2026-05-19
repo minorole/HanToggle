@@ -3,6 +3,15 @@ import SwiftUI
 
 struct HotkeyRecorderView: NSViewRepresentable {
     let onHotkeyCaptured: (GlobalHotkey) -> Void
+    let onCancel: () -> Void
+
+    init(
+        onHotkeyCaptured: @escaping (GlobalHotkey) -> Void,
+        onCancel: @escaping () -> Void = {}
+    ) {
+        self.onHotkeyCaptured = onHotkeyCaptured
+        self.onCancel = onCancel
+    }
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
@@ -12,6 +21,7 @@ struct HotkeyRecorderView: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.updateCaptureHandler(onHotkeyCaptured)
+        context.coordinator.updateCancelHandler(onCancel)
     }
 
     static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
@@ -19,19 +29,28 @@ struct HotkeyRecorderView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onHotkeyCaptured: onHotkeyCaptured)
+        Coordinator(onHotkeyCaptured: onHotkeyCaptured, onCancel: onCancel)
     }
 
     final class Coordinator: NSObject {
         private var hotkeyCaptured: (GlobalHotkey) -> Void
+        private var cancelled: () -> Void
         private var monitor: Any?
 
-        init(onHotkeyCaptured: @escaping (GlobalHotkey) -> Void) {
+        init(
+            onHotkeyCaptured: @escaping (GlobalHotkey) -> Void,
+            onCancel: @escaping () -> Void
+        ) {
             self.hotkeyCaptured = onHotkeyCaptured
+            self.cancelled = onCancel
         }
 
         func updateCaptureHandler(_ onHotkeyCaptured: @escaping (GlobalHotkey) -> Void) {
             hotkeyCaptured = onHotkeyCaptured
+        }
+
+        func updateCancelHandler(_ onCancel: @escaping () -> Void) {
+            cancelled = onCancel
         }
 
         func startMonitoring() {
@@ -42,6 +61,11 @@ struct HotkeyRecorderView: NSViewRepresentable {
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 guard let self else {
                     return event
+                }
+
+                if event.keyCode == 53 {
+                    self.cancelled()
+                    return nil
                 }
 
                 let hotkey = self.hotkey(from: event)

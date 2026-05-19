@@ -16,6 +16,8 @@ final class AppState: ObservableObject {
     @Published private(set) var showMenuBarStatus = true
     @Published private(set) var launchAtLogin = false
 
+    private var lastErrorSource: ErrorSource?
+
     var canToggleSelection: Bool {
         isAccessibilityTrusted && canUseAccessibilityEvents
     }
@@ -31,11 +33,13 @@ final class AppState: ObservableObject {
     func setReady() {
         statusMessage = "HanToggle is ready"
         lastError = nil
+        lastErrorSource = nil
     }
 
-    func setError(_ message: String) {
+    func setError(_ message: String, source: ErrorSource = .general) {
         statusMessage = "HanToggle needs attention"
         lastError = message
+        lastErrorSource = source
     }
 
     func updateAccessibility(trusted: Bool, canUseEvents: Bool) {
@@ -46,15 +50,22 @@ final class AppState: ObservableObject {
         case (true, true):
             setReady()
         case (true, false):
-            setError("Accessibility permission is enabled, but HanToggle cannot receive keyboard events yet. Restart HanToggle and try again.")
+            setError(
+                "Accessibility permission is enabled, but HanToggle cannot receive keyboard events yet. Restart HanToggle and try again.",
+                source: .accessibility
+            )
         case (false, _):
-            setError("Accessibility permission is required. Enable HanToggle in System Settings > Privacy & Security > Accessibility.")
+            setError(
+                "Accessibility permission is required. Enable HanToggle in System Settings > Privacy & Security > Accessibility.",
+                source: .accessibility
+            )
         }
     }
 
     func updateAfterToggle(_ result: ToggleResult) {
         lastDirection = result.direction
         lastError = nil
+        lastErrorSource = nil
 
         switch result.direction {
         case .simplifiedToTraditional:
@@ -73,13 +84,11 @@ final class AppState: ObservableObject {
     }
 
     func confirmHotkeyActive(_ displayName: String) {
-        let previousHotkeyError = hotkeyRecordingError
-
         hotkeyDisplayName = displayName
         hasActiveHotkey = true
         hotkeyRecordingError = nil
 
-        if lastError == nil || lastError == previousHotkeyError {
+        if lastError == nil || lastErrorSource == .hotkey {
             setReady()
         }
     }
@@ -90,7 +99,7 @@ final class AppState: ObservableObject {
 
     func markHotkeyInactive(_ message: String) {
         hasActiveHotkey = false
-        setError(message)
+        setError(message, source: .hotkey)
         hotkeyRecordingError = message
     }
 
@@ -106,6 +115,12 @@ final class AppState: ObservableObject {
 
     func updateLaunchAtLogin(_ launchAtLogin: Bool) {
         self.launchAtLogin = launchAtLogin
+    }
+
+    enum ErrorSource {
+        case accessibility
+        case hotkey
+        case general
     }
 }
 

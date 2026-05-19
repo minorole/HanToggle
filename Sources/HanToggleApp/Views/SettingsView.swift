@@ -11,11 +11,17 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if isRecordingHotkey {
                         Text("Press new shortcut...")
-                        HotkeyRecorderView { hotkey in
-                            if appDelegate?.setHotkey(hotkey) == true {
+                        HotkeyRecorderView(
+                            onHotkeyCaptured: { hotkey in
+                                if appDelegate?.setHotkey(hotkey) == true {
+                                    isRecordingHotkey = false
+                                }
+                            },
+                            onCancel: {
                                 isRecordingHotkey = false
+                                state.setHotkeyRecordingError(nil)
                             }
-                        }
+                        )
                         .frame(height: 1)
 
                         HStack {
