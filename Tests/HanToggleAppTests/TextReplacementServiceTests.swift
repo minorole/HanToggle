@@ -5,6 +5,26 @@ import Testing
 @MainActor
 @Suite("TextReplacementService")
 struct TextReplacementServiceTests {
+    @Test("missing accessibility permission blocks mutation")
+    func missingAccessibilityPermissionPreventsMutation() async throws {
+        let pasteboard = makePasteboard()
+        Self.setString("original", on: pasteboard)
+        let keyboard = FakeKeyboardEventSender()
+        let service = try makeService(
+            pasteboard: pasteboard,
+            keyboardEventSender: keyboard,
+            permissionStatus: .notTrusted
+        )
+
+        await expectTextReplacementError(.missingAccessibilityPermission) {
+            _ = try await service.toggleSelection()
+        }
+
+        #expect(pasteboard.string(forType: .string) == "original")
+        #expect(keyboard.copyCallCount == 0)
+        #expect(keyboard.pasteCallCount == 0)
+    }
+
     @Test("incomplete snapshot prevents pasteboard mutation")
     func incompleteSnapshotPreventsMutation() async throws {
         let pasteboard = makePasteboard()
@@ -112,13 +132,14 @@ struct TextReplacementServiceTests {
     private func makeService(
         pasteboard: NSPasteboard,
         keyboardEventSender: FakeKeyboardEventSender,
+        permissionStatus: AccessibilityPermissionStatus = .trusted,
         copyDelay: Duration = .zero,
         pasteDelay: Duration = .zero,
         snapshotCapture: @escaping (NSPasteboard) -> PasteboardSnapshot = { PasteboardSnapshot(from: $0) },
         snapshotRestore: @escaping (PasteboardSnapshot, NSPasteboard) -> Bool = { $0.restore(to: $1) }
     ) throws -> TextReplacementService {
         try TextReplacementService(
-            permissionManager: FakePermissionManager(),
+            permissionManager: FakePermissionManager(permissionStatus: permissionStatus),
             keyboardEventSender: keyboardEventSender,
             pasteboard: pasteboard,
             copyDelay: copyDelay,
@@ -161,8 +182,13 @@ struct TextReplacementServiceTests {
 }
 
 private struct FakePermissionManager: AccessibilityPermissionChecking {
-    func isTrusted(prompt: Bool) -> Bool { true }
-    func canCreateEventTap() -> Bool { true }
+    let permissionStatus: AccessibilityPermissionStatus
+
+    func status(prompt: Bool) -> AccessibilityPermissionStatus {
+        permissionStatus
+    }
+
+    func openAccessibilitySettings() {}
 }
 
 @MainActor

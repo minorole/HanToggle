@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import HanToggleApp
@@ -63,6 +64,25 @@ struct AppDelegateLaunchAtLoginTests {
         #expect(manager.requests.isEmpty)
     }
 
+    @Test("application activation updates permission state from injected permission manager")
+    func applicationActivationRefreshesPermissionState() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let state = AppState()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            permissionManager: FakeAccessibilityPermissionManager(status: .trustedButEventsUnavailable)
+        )
+
+        appDelegate.applicationDidBecomeActive(Notification(name: NSApplication.didBecomeActiveNotification))
+
+        #expect(state.accessibilityStatus == .trustedButEventsUnavailable)
+        #expect(state.statusMessage == "Restart Required")
+        #expect(state.lastError == "Restart HanToggle after enabling Accessibility.")
+    }
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -90,4 +110,18 @@ private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
 
 private enum LaunchAtLoginTestError: Error {
     case failed
+}
+
+private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
+    private let statusValue: AccessibilityPermissionStatus
+
+    init(status: AccessibilityPermissionStatus) {
+        statusValue = status
+    }
+
+    func status(prompt: Bool) -> AccessibilityPermissionStatus {
+        statusValue
+    }
+
+    func openAccessibilitySettings() {}
 }

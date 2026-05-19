@@ -4,8 +4,8 @@ import HanToggle
 
 @MainActor
 protocol AccessibilityPermissionChecking {
-    func isTrusted(prompt: Bool) -> Bool
-    func canCreateEventTap() -> Bool
+    func status(prompt: Bool) -> AccessibilityPermissionStatus
+    func openAccessibilitySettings()
 }
 
 extension AccessibilityPermissionManager: AccessibilityPermissionChecking {}
@@ -99,7 +99,7 @@ final class TextReplacementService {
         isReplacementInProgress = true
         defer { isReplacementInProgress = false }
 
-        guard permissionManager.isTrusted(prompt: false), permissionManager.canCreateEventTap() else {
+        guard permissionManager.status(prompt: false) == .trusted else {
             throw TextReplacementError.missingAccessibilityPermission
         }
 

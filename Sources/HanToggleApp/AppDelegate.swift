@@ -5,7 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings: AppSettings
     private let state: AppState
     private var hotkeyManager: any HotkeyManaging
-    private let permissionManager = AccessibilityPermissionManager()
+    private let permissionManager: any AccessibilityPermissionChecking
     private let launchAtLoginManager: any LaunchAtLoginManaging
     private var textReplacementService: TextReplacementService?
 
@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.settings = AppSettings()
         self.launchAtLoginManager = LaunchAtLoginManager()
         self.hotkeyManager = HotkeyManager()
+        self.permissionManager = AccessibilityPermissionManager()
         self.state = .shared
         super.init()
     }
@@ -21,11 +22,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings: AppSettings,
         launchAtLoginManager: any LaunchAtLoginManaging,
         state: AppState,
-        hotkeyManager: any HotkeyManaging = HotkeyManager()
+        hotkeyManager: any HotkeyManaging = HotkeyManager(),
+        permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager()
     ) {
         self.settings = settings
         self.launchAtLoginManager = launchAtLoginManager
         self.hotkeyManager = hotkeyManager
+        self.permissionManager = permissionManager
         self.state = state
         super.init()
     }
@@ -51,11 +54,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager.stop()
     }
 
-    func refreshAccessibilityState(prompt: Bool) {
-        let trusted = permissionManager.isTrusted(prompt: prompt)
-        let canUseEvents = permissionManager.canCreateEventTap()
+    func applicationDidBecomeActive(_ notification: Notification) {
+        refreshAccessibilityState(prompt: false)
+    }
 
-        appState.updateAccessibility(trusted: trusted, canUseEvents: canUseEvents)
+    func refreshAccessibilityState(prompt: Bool) {
+        state.updateAccessibility(permissionManager.status(prompt: prompt))
     }
 
     func requestAccessibilityPermission() {

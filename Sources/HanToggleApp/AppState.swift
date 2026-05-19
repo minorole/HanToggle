@@ -5,6 +5,7 @@ import HanToggle
 final class AppState: ObservableObject {
     static let shared = AppState()
 
+    @Published private(set) var accessibilityStatus: AccessibilityPermissionStatus = .notTrusted
     @Published private(set) var statusMessage = "Starting HanToggle..."
     @Published private(set) var lastError: String?
     @Published private(set) var isAccessibilityTrusted = false
@@ -19,7 +20,7 @@ final class AppState: ObservableObject {
     private var lastErrorSource: ErrorSource?
 
     var canToggleSelection: Bool {
-        isAccessibilityTrusted && canUseAccessibilityEvents
+        accessibilityStatus == .trusted
     }
 
     var menuBarSystemImageName: String {
@@ -42,23 +43,26 @@ final class AppState: ObservableObject {
         lastErrorSource = source
     }
 
-    func updateAccessibility(trusted: Bool, canUseEvents: Bool) {
-        isAccessibilityTrusted = trusted
-        canUseAccessibilityEvents = canUseEvents
+    func updateAccessibility(_ status: AccessibilityPermissionStatus) {
+        accessibilityStatus = status
 
-        switch (trusted, canUseEvents) {
-        case (true, true):
+        switch status {
+        case .trusted:
+            isAccessibilityTrusted = true
+            canUseAccessibilityEvents = true
             setReady()
-        case (true, false):
-            setError(
-                "Accessibility permission is enabled, but HanToggle cannot receive keyboard events yet. Restart HanToggle and try again.",
-                source: .accessibility
-            )
-        case (false, _):
-            setError(
-                "Accessibility permission is required. Enable HanToggle in System Settings > Privacy & Security > Accessibility.",
-                source: .accessibility
-            )
+        case .trustedButEventsUnavailable:
+            isAccessibilityTrusted = true
+            canUseAccessibilityEvents = false
+            statusMessage = "Restart Required"
+            lastError = "Restart HanToggle after enabling Accessibility."
+            lastErrorSource = .accessibility
+        case .notTrusted:
+            isAccessibilityTrusted = false
+            canUseAccessibilityEvents = false
+            statusMessage = "Accessibility Required"
+            lastError = "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
+            lastErrorSource = .accessibility
         }
     }
 
