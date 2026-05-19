@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible HanToggle problem.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not include private selected text, clipboard contents, credentials, or personal data. Use short made-up examples if text examples are needed.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem and the steps that reproduced it.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect HanToggle to do?
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: "Example: macOS 14.6"
+    validations:
+      required: true
+  - type: input
+    id: app-name
+    attributes:
+      label: App where text was selected
+      placeholder: "Example: TextEdit, Notes, Chrome, Slack"
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Include only non-private details that help reproduce the issue.
