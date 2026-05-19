@@ -49,15 +49,40 @@ Build a local `.app` bundle:
 Scripts/build-app.sh
 ```
 
+## Compatibility
+
+HanToggle targets macOS 13 or newer. Release builds are universal and support Apple Silicon and Intel Macs.
+
+## Accessibility Permission
+
+HanToggle needs Accessibility permission to replace selected text in other apps.
+
+1. Launch HanToggle.
+2. Open the HanToggle menu and choose **Open Accessibility Settings**.
+3. In System Settings, go to **Privacy & Security > Accessibility**.
+4. Enable HanToggle.
+5. Return to HanToggle. If macOS still blocks keyboard events, restart HanToggle.
+
+HanToggle does not touch the clipboard when Accessibility permission is missing.
+
+## Hotkey Conflicts
+
+The default hotkey is `Control-Option-H`. You can change it in Settings.
+
+If HanToggle says a shortcut is already in use or reserved by macOS, choose another shortcut. HanToggle does not override other apps' shortcuts. If a new shortcut cannot be registered, HanToggle keeps the previous working shortcut active.
+
+## Troubleshooting
+
+- **The hotkey does nothing:** confirm HanToggle is enabled in System Settings > Privacy & Security > Accessibility, then restart HanToggle.
+- **The shortcut is rejected:** choose a shortcut with Control, Option, or Command. Avoid bare letters, Escape, Return, Tab, Space, arrow keys, and shortcuts already used by macOS or another app.
+- **Text is not replaced in one app:** some apps block synthetic copy/paste events. Try TextEdit to confirm HanToggle is working, then report the app that failed.
+- **Clipboard was not changed back:** stop using the app and report the issue. Clipboard preservation failures are release blockers.
+
 ## Privacy
 
 HanToggle converts text locally. It does not use analytics, telemetry, update checks, or network conversion.
 
 Selected text and clipboard contents are private user data. The app should not log, persist, or transmit selected text, clipboard contents, or converted text. The text replacement flow is designed to preserve the user's clipboard whenever possible.
-
-## Permissions
-
-The menu-bar app needs macOS Accessibility permission to automate selected-text replacement in other apps. If permission is missing, HanToggle should fail clearly and guide the user to the correct macOS setting.
 
 ## Release Scripts
 
