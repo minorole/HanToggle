@@ -11,6 +11,8 @@ final class AppState: ObservableObject {
     @Published private(set) var canUseAccessibilityEvents = false
     @Published private(set) var lastDirection: ToggleDirection = .unchanged
     @Published private(set) var hotkeyDisplayName = GlobalHotkey.default.displayName
+    @Published private(set) var hotkeyRecordingError: String?
+    @Published private(set) var hasActiveHotkey = false
     @Published private(set) var showMenuBarStatus = true
     @Published private(set) var launchAtLogin = false
 
@@ -66,6 +68,17 @@ final class AppState: ObservableObject {
 
     func updateHotkeyDisplayName(_ displayName: String) {
         hotkeyDisplayName = displayName
+        hasActiveHotkey = true
+        hotkeyRecordingError = nil
+    }
+
+    func setHotkeyRecordingError(_ error: String?) {
+        hotkeyRecordingError = error
+    }
+
+    func markHotkeyInactive(_ message: String) {
+        hasActiveHotkey = false
+        hotkeyRecordingError = message
     }
 
     func updateSettings(hotkeyDisplayName: String, showMenuBarStatus: Bool, launchAtLogin: Bool) {

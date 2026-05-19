@@ -12,6 +12,30 @@ struct AppStateTests {
         #expect(state.hotkeyDisplayName == GlobalHotkey.default.displayName)
     }
 
+    @Test("hotkey update failure keeps display and stores recorder error")
+    func hotkeyUpdateFailure() {
+        let state = AppState()
+
+        state.updateHotkeyDisplayName("Control-Option-H")
+        state.setHotkeyRecordingError("This shortcut is already in use or reserved by macOS. Choose another shortcut.")
+
+        #expect(state.hotkeyDisplayName == "Control-Option-H")
+        #expect(state.hotkeyRecordingError == "This shortcut is already in use or reserved by macOS. Choose another shortcut.")
+    }
+
+    @Test("successful hotkey update clears recorder error and marks active")
+    func hotkeyUpdateSuccess() {
+        let state = AppState()
+        let replacement = GlobalHotkey(keyCode: 8, modifiers: .command)
+
+        state.setHotkeyRecordingError("This shortcut is already in use or reserved by macOS. Choose another shortcut.")
+        state.updateHotkeyDisplayName(replacement.displayName)
+
+        #expect(state.hotkeyDisplayName == replacement.displayName)
+        #expect(state.hotkeyRecordingError == nil)
+        #expect(state.hasActiveHotkey)
+    }
+
     @Test("settings snapshot is loaded into app state")
     func updateSettings() {
         let state = AppState()

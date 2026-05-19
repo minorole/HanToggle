@@ -3,16 +3,47 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var state: AppState
+    @State private var isRecordingHotkey = false
 
     var body: some View {
         Form {
             Section("General") {
-                LabeledContent("Hotkey", value: state.hotkeyDisplayName)
+                VStack(alignment: .leading, spacing: 8) {
+                    if isRecordingHotkey {
+                        Text("Press new shortcut...")
+                        HotkeyRecorderView { hotkey in
+                            if appDelegate?.setHotkey(hotkey) == true {
+                                isRecordingHotkey = false
+                            }
+                        }
+                        .frame(height: 1)
 
-                Button("Reset to Control-Option-H") {
-                    let settings = AppSettings()
-                    settings.hotkey = .default
-                    appDelegate?.applySettings()
+                        HStack {
+                            Button("Cancel") {
+                                isRecordingHotkey = false
+                                state.setHotkeyRecordingError(nil)
+                            }
+
+                            Button("Reset") {
+                                if appDelegate?.resetHotkeyToDefault() == true {
+                                    isRecordingHotkey = false
+                                }
+                            }
+                        }
+                    } else {
+                        HStack {
+                            LabeledContent("Hotkey", value: state.hotkeyDisplayName)
+                            Button("Change...") {
+                                isRecordingHotkey = true
+                                state.setHotkeyRecordingError(nil)
+                            }
+                        }
+                    }
+
+                    if let hotkeyRecordingError = state.hotkeyRecordingError {
+                        Text(hotkeyRecordingError)
+                            .foregroundStyle(.red)
+                    }
                 }
             }
 
