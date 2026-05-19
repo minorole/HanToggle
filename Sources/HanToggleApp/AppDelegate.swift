@@ -138,7 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settings.hotkey = candidate
-        state.updateHotkeyDisplayName(candidate.displayName)
+        state.confirmHotkeyActive(candidate.displayName)
         return true
     }
 
