@@ -4,9 +4,12 @@ AGENTS.md
 .codex/
 docs/superpowers/
 /.build
+/build/
 /Packages
 xcuserdata/
 DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+*.dmg
+*.zip
