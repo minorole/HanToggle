@@ -5,6 +5,13 @@ import HanToggle
 @MainActor
 @Suite("AppState")
 struct AppStateTests {
+    @Test("default hotkey display name is shown")
+    func defaultHotkeyDisplayName() {
+        let state = AppState()
+
+        #expect(state.hotkeyDisplayName == GlobalHotkey.default.displayName)
+    }
+
     @Test("update after toggle records direction and Traditional status")
     func updateAfterSimplifiedToTraditionalToggle() {
         let state = AppState()

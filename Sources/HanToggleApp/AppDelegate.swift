@@ -2,6 +2,8 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let settings = AppSettings()
+    private let hotkeyManager = HotkeyManager()
     private let permissionManager = AccessibilityPermissionManager()
     private var textReplacementService: TextReplacementService?
 
@@ -9,11 +11,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         refreshAccessibilityState(prompt: false)
 
+        hotkeyManager.onHotkey = { [weak self] in
+            self?.toggleSelection()
+        }
+
         do {
             textReplacementService = try TextReplacementService(permissionManager: permissionManager)
+            startHotkey()
         } catch {
             appState.setError(error.localizedDescription)
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        hotkeyManager.stop()
     }
 
     func refreshAccessibilityState(prompt: Bool) {
@@ -41,6 +52,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } catch {
                 AppState.shared.setError(error.localizedDescription)
             }
+        }
+    }
+
+    private func startHotkey() {
+        let hotkey = settings.hotkey
+        AppState.shared.updateHotkeyDisplayName(hotkey.displayName)
+
+        do {
+            try hotkeyManager.start(hotkey: hotkey)
+        } catch {
+            AppState.shared.setError(error.localizedDescription)
         }
     }
 }

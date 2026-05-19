@@ -10,6 +10,7 @@ final class AppState: ObservableObject {
     @Published private(set) var isAccessibilityTrusted = false
     @Published private(set) var canUseAccessibilityEvents = false
     @Published private(set) var lastDirection: ToggleDirection = .unchanged
+    @Published private(set) var hotkeyDisplayName = GlobalHotkey.default.displayName
 
     var canToggleSelection: Bool {
         isAccessibilityTrusted && canUseAccessibilityEvents
@@ -51,6 +52,10 @@ final class AppState: ObservableObject {
         case .unchanged:
             statusMessage = "Ready"
         }
+    }
+
+    func updateHotkeyDisplayName(_ displayName: String) {
+        hotkeyDisplayName = displayName
     }
 }
 
