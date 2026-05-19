@@ -54,6 +54,7 @@ struct GlobalHotkey: Equatable, RawRepresentable {
         Self.keyDisplayNames[keyCode] ?? "Key \(keyCode)"
     }
 
+    // macOS virtual key-code display names for common key codes.
     private static let keyDisplayNames: [UInt32: String] = [
         0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
         8: "C", 9: "V", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",

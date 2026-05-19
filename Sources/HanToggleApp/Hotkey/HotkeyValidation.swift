@@ -1,5 +1,3 @@
-import Foundation
-
 enum HotkeyValidationResult: Equatable {
     case valid
     case invalid(String)

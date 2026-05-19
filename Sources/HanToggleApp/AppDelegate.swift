@@ -4,7 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings: AppSettings
     private let state: AppState
-    private let hotkeyManager = HotkeyManager()
+    private var hotkeyManager: any HotkeyManaging
     private let permissionManager = AccessibilityPermissionManager()
     private let launchAtLoginManager: any LaunchAtLoginManaging
     private var textReplacementService: TextReplacementService?
@@ -12,13 +12,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         self.settings = AppSettings()
         self.launchAtLoginManager = LaunchAtLoginManager()
+        self.hotkeyManager = HotkeyManager()
         self.state = .shared
         super.init()
     }
 
-    init(settings: AppSettings, launchAtLoginManager: any LaunchAtLoginManaging, state: AppState) {
+    init(
+        settings: AppSettings,
+        launchAtLoginManager: any LaunchAtLoginManaging,
+        state: AppState,
+        hotkeyManager: any HotkeyManaging = HotkeyManager()
+    ) {
         self.settings = settings
         self.launchAtLoginManager = launchAtLoginManager
+        self.hotkeyManager = hotkeyManager
         self.state = state
         super.init()
     }
@@ -103,6 +110,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startHotkey() {
         let hotkey = settings.hotkey
         state.updateHotkeyDisplayName(hotkey.displayName)
+
+        let validation = HotkeyValidator.validate(hotkey)
+
+        switch validation {
+        case .valid:
+            break
+        case .invalid:
+            state.setError(validation.errorMessage ?? "Choose another shortcut.")
+            return
+        }
 
         do {
             try hotkeyManager.start(hotkey: hotkey)
