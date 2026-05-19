@@ -24,12 +24,19 @@ struct StatusMenuView: View {
                     appDelegate?.openAccessibilitySettings()
                 }
             }
+
         }
 
         Divider()
 
         Button("Settings") {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            appDelegate?.showSettingsWindow()
+        }
+
+        if !state.canCompleteSetup {
+            Button("Setup HanToggle") {
+                appDelegate?.showSetupWindow()
+            }
         }
 
         Button("Quit") {
@@ -42,6 +49,6 @@ struct StatusMenuView: View {
     }
 
     private var appDelegate: AppDelegate? {
-        NSApp.delegate as? AppDelegate
+        AppDelegate.shared ?? (NSApp.delegate as? AppDelegate)
     }
 }

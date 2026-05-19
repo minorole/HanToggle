@@ -1,4 +1,5 @@
 import Testing
+import Combine
 import HanToggle
 @testable import HanToggleApp
 
@@ -10,6 +11,80 @@ struct AppStateTests {
         let state = AppState()
 
         #expect(state.hotkeyDisplayName == GlobalHotkey.default.displayName)
+    }
+
+    @Test("setup cannot complete before permission and hotkey are ready")
+    func setupCannotCompleteBeforeReady() {
+        let state = AppState()
+
+        state.updateAccessibility(.notTrusted)
+
+        #expect(!state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "Accessibility Required")
+        #expect(state.setupPrimaryMessage == "Enable HanToggle in System Settings > Privacy & Security > Accessibility.")
+    }
+
+    @Test("setup can complete when permission and hotkey are ready")
+    func setupCanCompleteWhenReady() {
+        let state = AppState()
+
+        state.updateAccessibility(.trusted)
+        state.setTextReplacementServiceReady(true)
+        state.confirmHotkeyActive("Control-Option-H")
+
+        #expect(state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "HanToggle is ready")
+        #expect(state.setupPrimaryMessage == "Select Chinese text in most apps, then press Control-Option-H.")
+    }
+
+    @Test("setup is blocked when text replacement service is unavailable")
+    func setupBlockedWhenTextReplacementServiceUnavailable() {
+        let state = AppState()
+
+        state.updateAccessibility(.trusted)
+        state.setTextReplacementServiceReady(false)
+        state.confirmHotkeyActive("Control-Option-H")
+
+        #expect(!state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "Text Converter")
+        #expect(state.setupPrimaryMessage == TextReplacementError.converterInitializationFailed.localizedDescription)
+    }
+
+    @Test("inactive hotkey blocks setup completion")
+    func inactiveHotkeyBlocksSetupCompletion() {
+        let state = AppState()
+
+        state.updateAccessibility(.trusted)
+        state.setTextReplacementServiceReady(true)
+        state.markHotkeyInactive("Could not register the shortcut.")
+
+        #expect(!state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "Keyboard Shortcut")
+        #expect(state.setupPrimaryMessage == "Choose a keyboard shortcut before completing setup.")
+    }
+
+    @Test("trusted accessibility refresh preserves non-accessibility errors")
+    func trustedAccessibilityRefreshPreservesNonAccessibilityErrors() {
+        let state = AppState()
+        let hotkeyMessage = "Could not register the shortcut."
+
+        state.setError(hotkeyMessage, source: .hotkey)
+        state.updateAccessibility(.trusted)
+
+        #expect(state.lastError == hotkeyMessage)
+        #expect(state.statusMessage == "HanToggle needs attention")
+    }
+
+    @Test("trusted accessibility refresh clears accessibility guidance")
+    func trustedAccessibilityRefreshClearsAccessibilityGuidance() {
+        let state = AppState()
+        let accessibilityMessage = "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
+
+        state.setError(accessibilityMessage, source: .accessibility)
+        state.updateAccessibility(.trusted)
+
+        #expect(state.lastError == nil)
+        #expect(state.statusMessage == "HanToggle is ready")
     }
 
     @Test("hotkey update failure keeps display and stores recorder error")
@@ -128,6 +203,21 @@ struct AppStateTests {
         state.updateShowMenuBarItem(false)
 
         #expect(!state.showMenuBarItem)
+    }
+
+    @Test("unchanged menu bar visibility does not publish")
+    func unchangedMenuBarVisibilityDoesNotPublish() {
+        let state = AppState()
+        var publishCount = 0
+        let cancellable = state.objectWillChange.sink {
+            publishCount += 1
+        }
+
+        state.updateShowMenuBarItem(true)
+
+        #expect(state.showMenuBarItem)
+        #expect(publishCount == 0)
+        cancellable.cancel()
     }
 
     @Test("menu bar cannot be hidden without active hotkey")

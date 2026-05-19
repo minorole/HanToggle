@@ -16,10 +16,5 @@ struct HanToggleApp: App {
         } label: {
             Label("HanToggle", systemImage: state.menuBarSystemImageName)
         }
-
-        Settings {
-            SettingsView()
-                .environmentObject(state)
-        }
     }
 }

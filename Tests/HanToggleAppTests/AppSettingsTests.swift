@@ -29,6 +29,25 @@ struct AppSettingsTests {
         #expect(reloaded.launchAtLogin)
     }
 
+    @Test("setup completion defaults to false")
+    func setupCompletionDefault() {
+        let settings = AppSettings(defaults: makeDefaults())
+
+        #expect(!settings.hasCompletedSetup)
+    }
+
+    @Test("setup completion persists through UserDefaults")
+    func setupCompletionPersistence() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+
+        settings.hasCompletedSetup = true
+
+        let reloaded = AppSettings(defaults: defaults)
+
+        #expect(reloaded.hasCompletedSetup)
+    }
+
     @Test("old menu bar status setting migrates to menu bar item setting")
     func menuBarSettingMigration() {
         let defaults = makeDefaults()

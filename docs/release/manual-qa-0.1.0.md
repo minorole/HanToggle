@@ -35,12 +35,27 @@ App tested: Not run
 
 Status: Not run in this non-interactive automated session. Test with a common non-native app before release.
 
+## First-Run Setup QA
+
+- [ ] Delete the local HanToggle setup completion preference.
+- [ ] Launch `/Applications/HanToggle.app`.
+- [ ] Confirm the setup window appears on first launch.
+- [ ] Confirm the setup window explains menu-bar behavior (including the menu-bar icon opens Settings and Quit) and the default hotkey.
+- [ ] Click **Open Accessibility Settings**.
+- [ ] Confirm System Settings opens or the fallback guidance text is visible in the setup window.
+- [ ] Enable Accessibility permission for HanToggle.
+- [ ] Return to HanToggle and confirm permission status updates.
+- [ ] Confirm setup completion is blocked until Accessibility permission is usable and the hotkey is active.
+- [ ] Confirm **Settings** opens and closes normally.
+- [ ] Confirm the app idles at low CPU after setup.
+- [ ] Confirm conversion works in TextEdit after setup.
+
 ## Permission Verification
 
 - [ ] With Accessibility permission removed, HanToggle shows Accessibility Required.
 - [ ] Open Accessibility Settings opens System Settings to Privacy & Security > Accessibility as closely as macOS allows.
 - [ ] With Accessibility permission missing, hotkey does not mutate clipboard.
-- [ ] After granting permission and restarting if needed, hotkey works.
+- [ ] After granting permission, hotkey works.
 
 Status: Not run manually. Automated tests cover state guidance and no clipboard mutation before permission, but release still needs interactive permission QA.
 
@@ -77,11 +92,11 @@ Stop release for any checked item:
 
 ## Notes
 
-Record failures, affected app, exact text selected, and whether clipboard contents changed. Do not paste private clipboard contents into this file.
+Record failures with fake or redacted sample text, the affected app, and whether clipboard contents changed. Do not paste private clipboard contents into this file.
 
 Automated verification passed:
 
-- `swift test`: passed, 80 tests.
+- `swift test`: passed.
 - `swift build --product HanToggleApp`: passed.
 - CLI Simplified to Traditional output: `這句話是簡體中文。`
 - CLI Traditional to Simplified output: `这句话是简体中文。`

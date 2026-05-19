@@ -417,7 +417,9 @@ private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecki
         .trusted
     }
 
-    func openAccessibilitySettings() {}
+    func openAccessibilitySettings() -> Bool {
+        true
+    }
 }
 
 private enum SettableTestError: Error {

@@ -2,11 +2,15 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    static private(set) var shared: AppDelegate?
+
     private let settings: AppSettings
     private let state: AppState
     private var hotkeyManager: any HotkeyManaging
     private let permissionManager: any AccessibilityPermissionChecking
     private let launchAtLoginManager: any LaunchAtLoginManaging
+    private let settingsWindowPresenter: any SettingsWindowPresenting
+    private let setupWindowPresenter: any SetupWindowPresenting
     private var textReplacementService: TextReplacementService?
 
     override init() {
@@ -15,7 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.hotkeyManager = HotkeyManager()
         self.permissionManager = AccessibilityPermissionManager()
         self.state = .shared
+        self.settingsWindowPresenter = AppKitSettingsWindowPresenter(state: self.state)
+        self.setupWindowPresenter = AppKitSetupWindowPresenter(state: self.state)
         super.init()
+        Self.shared = self
     }
 
     init(
@@ -23,29 +30,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         launchAtLoginManager: any LaunchAtLoginManaging,
         state: AppState,
         hotkeyManager: any HotkeyManaging = HotkeyManager(),
-        permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager()
+        permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager(),
+        settingsWindowPresenter: (any SettingsWindowPresenting)? = nil,
+        setupWindowPresenter: (any SetupWindowPresenting)? = nil
     ) {
         self.settings = settings
         self.launchAtLoginManager = launchAtLoginManager
         self.hotkeyManager = hotkeyManager
         self.permissionManager = permissionManager
         self.state = state
+        self.settingsWindowPresenter = settingsWindowPresenter ?? AppKitSettingsWindowPresenter(state: state)
+        self.setupWindowPresenter = setupWindowPresenter ?? AppKitSetupWindowPresenter(state: state)
         super.init()
+        Self.shared = self
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
-        refreshSettingsState()
-        refreshAccessibilityState(prompt: false)
-
+        if NSApp != nil {
+            NSApp.setActivationPolicy(.accessory)
+        }
         hotkeyManager.onHotkey = { [weak self] in
             self?.toggleSelection()
         }
 
         do {
             textReplacementService = try TextReplacementService(permissionManager: permissionManager)
+            state.setTextReplacementServiceReady(true)
             applySettings()
+            reconcileSetupPresentation()
         } catch {
+            state.setTextReplacementServiceReady(false)
+            reconcileSetupPresentation()
             state.setError(error.localizedDescription)
         }
     }
@@ -56,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         refreshAccessibilityState(prompt: false)
+        reconcileSetupPresentation(refreshState: false)
     }
 
     func refreshAccessibilityState(prompt: Bool) {
@@ -67,14 +83,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func openAccessibilitySettings() {
-        permissionManager.openAccessibilitySettings()
+        refreshAccessibilityState(prompt: true)
+        let didOpenSettings = permissionManager.openAccessibilitySettings()
         refreshAccessibilityState(prompt: false)
+
+        guard didOpenSettings else {
+            state.setError("HanToggle could not open Accessibility settings. Open System Settings > Privacy & Security > Accessibility manually.")
+            return
+        }
     }
 
     func applySettings() {
         refreshSettingsState()
         refreshAccessibilityState(prompt: false)
         startHotkey()
+    }
+
+    func showSettingsWindow() {
+        settingsWindowPresenter.showSettingsWindow()
+    }
+
+    func showSetupWindow() {
+        setupWindowPresenter.showSetupWindow()
     }
 
     func setLaunchAtLogin(_ enabled: Bool) -> Bool {
@@ -159,6 +189,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setHotkey(.default)
     }
 
+    func completeSetup() -> Bool {
+        refreshAccessibilityState(prompt: false)
+
+        guard state.canCompleteSetup else {
+            state.setError(state.setupPrimaryMessage)
+            setupWindowPresenter.showSetupWindow()
+            return false
+        }
+
+        settings.hasCompletedSetup = true
+        state.updateShowMenuBarItem(settings.showMenuBarItem)
+        setupWindowPresenter.closeSetupWindow()
+        state.setReady()
+        return true
+    }
+
+    func reconcileSetupPresentation() {
+        reconcileSetupPresentation(refreshState: true)
+    }
+
+    private func reconcileSetupPresentation(refreshState: Bool) {
+        if refreshState {
+            refreshSettingsState()
+            refreshAccessibilityState(prompt: false)
+        }
+
+        guard shouldShowSetup else {
+            return
+        }
+
+        state.updateShowMenuBarItem(true)
+        setupWindowPresenter.showSetupWindow()
+    }
+
     private func startHotkey() {
         let hotkey = settings.hotkey
         state.updateHotkeyDisplayName(hotkey.displayName)
@@ -190,5 +254,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showMenuBarItem: settings.showMenuBarItem,
             launchAtLogin: settings.launchAtLogin
         )
+    }
+
+    private var shouldShowSetup: Bool {
+        !settings.hasCompletedSetup ||
+        state.accessibilityStatus != .trusted ||
+        !state.hasActiveHotkey
     }
 }

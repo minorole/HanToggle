@@ -9,11 +9,11 @@ final class AppState: ObservableObject {
     @Published private(set) var statusMessage = "Starting HanToggle..."
     @Published private(set) var lastError: String?
     @Published private(set) var isAccessibilityTrusted = false
-    @Published private(set) var canUseAccessibilityEvents = false
     @Published private(set) var lastDirection: ToggleDirection = .unchanged
     @Published private(set) var hotkeyDisplayName = GlobalHotkey.default.displayName
     @Published private(set) var hotkeyRecordingError: String?
     @Published private(set) var hasActiveHotkey = false
+    @Published private(set) var isTextReplacementServiceReady = false
     @Published private(set) var showMenuBarItem = true
     @Published private(set) var launchAtLogin = false
 
@@ -23,12 +23,44 @@ final class AppState: ObservableObject {
         accessibilityStatus == .trusted
     }
 
+    var canCompleteSetup: Bool {
+        accessibilityStatus == .trusted && hasActiveHotkey && isTextReplacementServiceReady
+    }
+
+    var setupStatusTitle: String {
+        switch accessibilityStatus {
+        case .notTrusted:
+            "Accessibility Required"
+        case .trusted:
+            if !isTextReplacementServiceReady {
+                "Text Converter"
+            } else if hasActiveHotkey {
+                "HanToggle is ready"
+            } else {
+                "Keyboard Shortcut"
+            }
+        }
+    }
+
+    var setupPrimaryMessage: String {
+        switch accessibilityStatus {
+        case .notTrusted:
+            "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
+        case .trusted:
+            if !isTextReplacementServiceReady {
+                TextReplacementError.converterInitializationFailed.localizedDescription
+            } else if hasActiveHotkey {
+                "Select Chinese text in most apps, then press \(hotkeyDisplayName)."
+            } else {
+                "Choose a keyboard shortcut before completing setup."
+            }
+        }
+    }
+
     var accessibilityStatusLabel: String {
         switch accessibilityStatus {
         case .trusted:
             "Allowed"
-        case .trustedButEventsUnavailable:
-            "Restart needed"
         case .notTrusted:
             "Not allowed"
         }
@@ -38,8 +70,6 @@ final class AppState: ObservableObject {
         switch accessibilityStatus {
         case .trusted:
             "HanToggle can replace selected text with the configured hotkey."
-        case .trustedButEventsUnavailable:
-            "Restart HanToggle after enabling Accessibility."
         case .notTrusted:
             "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
         }
@@ -71,17 +101,18 @@ final class AppState: ObservableObject {
         switch status {
         case .trusted:
             isAccessibilityTrusted = true
-            canUseAccessibilityEvents = true
+
+            guard lastErrorSource == .accessibility else {
+                if lastError == nil {
+                    statusMessage = "HanToggle is ready"
+                }
+
+                return
+            }
+
             setReady()
-        case .trustedButEventsUnavailable:
-            isAccessibilityTrusted = true
-            canUseAccessibilityEvents = false
-            statusMessage = "Restart Required"
-            lastError = "Restart HanToggle after enabling Accessibility."
-            lastErrorSource = .accessibility
         case .notTrusted:
             isAccessibilityTrusted = false
-            canUseAccessibilityEvents = false
             statusMessage = "Accessibility Required"
             lastError = "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
             lastErrorSource = .accessibility
@@ -129,6 +160,10 @@ final class AppState: ObservableObject {
         hotkeyRecordingError = message
     }
 
+    func setTextReplacementServiceReady(_ isReady: Bool) {
+        isTextReplacementServiceReady = isReady
+    }
+
     func updateSettings(hotkeyDisplayName: String, showMenuBarItem: Bool, launchAtLogin: Bool) {
         self.hotkeyDisplayName = hotkeyDisplayName
         updateShowMenuBarItem(showMenuBarItem)
@@ -137,7 +172,15 @@ final class AppState: ObservableObject {
 
     func updateShowMenuBarItem(_ showMenuBarItem: Bool) {
         guard showMenuBarItem || hasActiveHotkey else {
+            guard !self.showMenuBarItem else {
+                return
+            }
+
             self.showMenuBarItem = true
+            return
+        }
+
+        guard self.showMenuBarItem != showMenuBarItem else {
             return
         }
 

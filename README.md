@@ -4,7 +4,7 @@ HanToggle is a lightweight macOS menu-bar utility for toggling selected Chinese 
 
 The intended workflow is:
 
-1. Select Chinese text in any app.
+1. Select Chinese text in most apps that allow standard copy/paste events.
 2. Press the configured hotkey.
 3. HanToggle replaces the selection with the opposite script.
 4. Press the hotkey again to convert it back.
@@ -53,17 +53,20 @@ Scripts/build-app.sh
 
 HanToggle targets macOS 13 or newer. Release builds are universal and support Apple Silicon and Intel Macs.
 
-## Accessibility Permission
+## First-Run Setup
 
-HanToggle needs Accessibility permission to replace selected text in other apps.
+On first launch, HanToggle opens a setup window. The setup window explains that HanToggle runs from the menu bar, shows the default shortcut, and guides you through Accessibility permission. The menu-bar icon is your main control point for Settings and Quit.
+
+HanToggle converts text locally and does not log, store, or transmit selected text or clipboard contents. It only requests what it needs to replace selected text in other apps.
 
 1. Launch HanToggle.
-2. Open the HanToggle menu and choose **Open Accessibility Settings**.
-3. In System Settings, go to **Privacy & Security > Accessibility**.
+2. In the setup window, choose **Open Accessibility Settings**.
+3. In System Settings, go to **Privacy & Security > Accessibility** if macOS does not open that page directly.
 4. Enable HanToggle.
-5. Return to HanToggle. If macOS still blocks keyboard events, restart HanToggle.
+5. Return to HanToggle.
+6. Click **Done** when HanToggle reports it is ready.
 
-HanToggle does not touch the clipboard when Accessibility permission is missing.
+After setup, HanToggle runs from the menu bar and does not appear in the Dock.
 
 ## Hotkey Conflicts
 
@@ -73,7 +76,7 @@ If HanToggle says a shortcut is already in use or reserved by macOS, choose anot
 
 ## Troubleshooting
 
-- **The hotkey does nothing:** confirm HanToggle is enabled in System Settings > Privacy & Security > Accessibility, then restart HanToggle.
+- **The hotkey does nothing:** confirm HanToggle is enabled in System Settings > Privacy & Security > Accessibility. If it is enabled and the problem continues, quit and reopen HanToggle.
 - **The shortcut is rejected:** choose a shortcut with Control, Option, or Command. Avoid bare letters, Escape, Return, Tab, Space, arrow keys, and shortcuts already used by macOS or another app.
 - **Text is not replaced in one app:** some apps block synthetic copy/paste events. Try TextEdit to confirm HanToggle is working, then report the app that failed.
 - **Clipboard was not changed back:** stop using the app and report the issue. Clipboard preservation failures are release blockers.

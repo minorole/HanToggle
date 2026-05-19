@@ -254,7 +254,9 @@ private struct FakePermissionManager: AccessibilityPermissionChecking {
         permissionStatus
     }
 
-    func openAccessibilitySettings() {}
+    func openAccessibilitySettings() -> Bool {
+        true
+    }
 }
 
 @MainActor

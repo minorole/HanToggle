@@ -4,6 +4,13 @@ import Testing
 @MainActor
 @Suite("Accessibility permission state")
 struct AccessibilityPermissionStateTests {
+    @Test("trusted accessibility status does not require a separate event tap probe")
+    func trustedStatusDoesNotRequireEventTapProbe() {
+        let manager = AccessibilityPermissionManager(trustCheck: { _ in true })
+
+        #expect(manager.status(prompt: false) == .trusted)
+    }
+
     @Test("not trusted state gives direct guidance")
     func notTrustedGuidance() {
         let state = AppState()
@@ -13,17 +20,6 @@ struct AccessibilityPermissionStateTests {
         #expect(!state.canToggleSelection)
         #expect(state.statusMessage == "Accessibility Required")
         #expect(state.lastError == "Enable HanToggle in System Settings > Privacy & Security > Accessibility.")
-    }
-
-    @Test("trusted but events unavailable asks for restart")
-    func trustedButEventsUnavailableGuidance() {
-        let state = AppState()
-
-        state.updateAccessibility(.trustedButEventsUnavailable)
-
-        #expect(!state.canToggleSelection)
-        #expect(state.statusMessage == "Restart Required")
-        #expect(state.lastError == "Restart HanToggle after enabling Accessibility.")
     }
 
     @Test("trusted state is ready")

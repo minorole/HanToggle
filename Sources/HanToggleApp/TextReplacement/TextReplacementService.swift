@@ -5,7 +5,7 @@ import HanToggle
 @MainActor
 protocol AccessibilityPermissionChecking {
     func status(prompt: Bool) -> AccessibilityPermissionStatus
-    func openAccessibilitySettings()
+    func openAccessibilitySettings() -> Bool
 }
 
 extension AccessibilityPermissionManager: AccessibilityPermissionChecking {}

@@ -15,7 +15,8 @@ struct AppDelegateLaunchAtLoginTests {
         let appDelegate = AppDelegate(
             settings: settings,
             launchAtLoginManager: manager,
-            state: state
+            state: state,
+            hotkeyManager: FakeHotkeyManager()
         )
 
         let didUpdate = appDelegate.setLaunchAtLogin(true)
@@ -56,7 +57,8 @@ struct AppDelegateLaunchAtLoginTests {
         let appDelegate = AppDelegate(
             settings: settings,
             launchAtLoginManager: manager,
-            state: state
+            state: state,
+            hotkeyManager: FakeHotkeyManager()
         )
 
         appDelegate.applySettings()
@@ -73,14 +75,194 @@ struct AppDelegateLaunchAtLoginTests {
             settings: settings,
             launchAtLoginManager: FakeLaunchAtLoginManager(),
             state: state,
-            permissionManager: FakeAccessibilityPermissionManager(status: .trustedButEventsUnavailable)
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted)
         )
 
         appDelegate.applicationDidBecomeActive(Notification(name: NSApplication.didBecomeActiveNotification))
 
-        #expect(state.accessibilityStatus == .trustedButEventsUnavailable)
-        #expect(state.statusMessage == "Restart Required")
-        #expect(state.lastError == "Restart HanToggle after enabling Accessibility.")
+        #expect(state.accessibilityStatus == .trusted)
+        #expect(state.statusMessage == "HanToggle is ready")
+        #expect(state.lastError == nil)
+    }
+
+    @Test("settings menu opens injected settings window presenter")
+    func settingsMenuOpensSettingsWindow() {
+        let presenter = FakeSettingsWindowPresenter()
+        let appDelegate = AppDelegate(
+            settings: AppSettings(defaults: makeDefaults()),
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState(),
+            settingsWindowPresenter: presenter
+        )
+
+        appDelegate.showSettingsWindow()
+
+        #expect(presenter.showSettingsWindowCalls == 1)
+    }
+
+    @Test("setup window is shown when setup is incomplete")
+    func setupWindowShownWhenSetupIncomplete() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        settings.hasCompletedSetup = false
+        let setupPresenter = FakeSetupWindowPresenter()
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState(),
+            hotkeyManager: FakeHotkeyManager(),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            setupWindowPresenter: setupPresenter
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+        #expect(setupPresenter.showSetupWindowCalls == 1)
+    }
+
+    @Test("setup window is not shown when setup is complete and app is ready")
+    func setupWindowNotShownWhenReady() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        settings.hasCompletedSetup = true
+        let setupPresenter = FakeSetupWindowPresenter()
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState(),
+            hotkeyManager: FakeHotkeyManager(activeHotkey: GlobalHotkey.default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            setupWindowPresenter: setupPresenter
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+        #expect(setupPresenter.showSetupWindowCalls == 0)
+    }
+
+    @Test("setup completion persists only when app is ready")
+    func setupCompletionPersistsOnlyWhenReady() {
+        let settings = AppSettings(defaults: makeDefaults())
+        let state = AppState()
+        let setupPresenter = FakeSetupWindowPresenter()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            permissionManager: FakeAccessibilityPermissionManager(status: .notTrusted),
+            setupWindowPresenter: setupPresenter
+        )
+
+        let didComplete = appDelegate.completeSetup()
+
+        #expect(!didComplete)
+        #expect(!settings.hasCompletedSetup)
+        #expect(setupPresenter.closeSetupWindowCalls == 0)
+    }
+
+    @Test("setup completion closes setup when app is ready")
+    func setupCompletionClosesSetupWhenReady() {
+        let settings = AppSettings(defaults: makeDefaults())
+        let setupPresenter = FakeSetupWindowPresenter()
+        let state = AppState()
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            setupWindowPresenter: setupPresenter
+        )
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        state.confirmHotkeyActive("Control-Option-H")
+
+        let didComplete = appDelegate.completeSetup()
+
+        #expect(didComplete)
+        #expect(settings.hasCompletedSetup)
+        #expect(setupPresenter.closeSetupWindowCalls == 1)
+    }
+
+    @Test("setup completion restores hidden menu bar preference")
+    func setupCompletionRestoresHiddenMenuBarPreference() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.showMenuBarItem = false
+        let setupPresenter = FakeSetupWindowPresenter()
+        let state = AppState()
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            setupWindowPresenter: setupPresenter
+        )
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        #expect(state.showMenuBarItem)
+
+        let didComplete = appDelegate.completeSetup()
+
+        #expect(didComplete)
+        #expect(!settings.showMenuBarItem)
+        #expect(!state.showMenuBarItem)
+        #expect(setupPresenter.closeSetupWindowCalls == 1)
+    }
+
+    @Test("setup cannot complete without converter initialization")
+    func setupCannotCompleteWithoutConverter() {
+        let settings = AppSettings(defaults: makeDefaults())
+        let state = AppState()
+        let setupPresenter = FakeSetupWindowPresenter()
+
+        state.updateAccessibility(.trusted)
+        state.confirmHotkeyActive("Control-Option-H")
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            setupWindowPresenter: setupPresenter
+        )
+
+        let didComplete = appDelegate.completeSetup()
+
+        #expect(!didComplete)
+        #expect(!settings.hasCompletedSetup)
+        #expect(setupPresenter.closeSetupWindowCalls == 0)
+        #expect(state.lastError == TextReplacementError.converterInitializationFailed.localizedDescription)
+    }
+
+    @Test("initialized app delegate is available to menu views")
+    func initializedAppDelegateIsAvailableToMenuViews() {
+        let appDelegate = AppDelegate(
+            settings: AppSettings(defaults: makeDefaults()),
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState()
+        )
+
+        #expect(AppDelegate.shared === appDelegate)
+    }
+
+    @Test("accessibility settings failure shows actionable error")
+    func accessibilitySettingsFailureShowsActionableError() {
+        let state = AppState()
+        let appDelegate = AppDelegate(
+            settings: AppSettings(defaults: makeDefaults()),
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            permissionManager: FakeAccessibilityPermissionManager(
+                status: .notTrusted,
+                openAccessibilitySettingsResult: false
+            )
+        )
+
+        appDelegate.openAccessibilitySettings()
+
+        #expect(state.lastError == "HanToggle could not open Accessibility settings. Open System Settings > Privacy & Security > Accessibility manually.")
     }
 
     private func makeDefaults() -> UserDefaults {
@@ -112,16 +294,66 @@ private enum LaunchAtLoginTestError: Error {
     case failed
 }
 
+private final class FakeSettingsWindowPresenter: SettingsWindowPresenting {
+    private(set) var showSettingsWindowCalls = 0
+
+    func showSettingsWindow() {
+        showSettingsWindowCalls += 1
+    }
+}
+
+private final class FakeSetupWindowPresenter: SetupWindowPresenting {
+    private(set) var showSetupWindowCalls = 0
+    private(set) var closeSetupWindowCalls = 0
+
+    func showSetupWindow() {
+        showSetupWindowCalls += 1
+    }
+
+    func closeSetupWindow() {
+        closeSetupWindowCalls += 1
+    }
+}
+
+private final class FakeHotkeyManager: HotkeyManaging {
+    var onHotkey: (() -> Void)?
+    private let activeHotkeyOverride: GlobalHotkey?
+    private(set) var startCalls: [GlobalHotkey] = []
+
+    init(activeHotkey: GlobalHotkey? = nil) {
+        self.activeHotkeyOverride = activeHotkey
+    }
+
+    var activeHotkey: GlobalHotkey? {
+        activeHotkeyOverride
+    }
+
+    func start(hotkey: GlobalHotkey) throws {
+        startCalls.append(hotkey)
+    }
+
+    func testRegistration(hotkey: GlobalHotkey) throws {}
+
+    func stop() {}
+}
+
 private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
     private let statusValue: AccessibilityPermissionStatus
+    private let openAccessibilitySettingsResult: Bool
 
-    init(status: AccessibilityPermissionStatus) {
+    init(
+        status: AccessibilityPermissionStatus,
+        openAccessibilitySettingsResult: Bool = true
+    ) {
         statusValue = status
+        self.openAccessibilitySettingsResult = openAccessibilitySettingsResult
     }
 
     func status(prompt: Bool) -> AccessibilityPermissionStatus {
         statusValue
     }
 
-    func openAccessibilitySettings() {}
+    func openAccessibilitySettings() -> Bool {
+        openAccessibilitySettingsResult
+    }
 }
