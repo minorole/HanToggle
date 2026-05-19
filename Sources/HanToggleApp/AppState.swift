@@ -8,6 +8,7 @@ final class AppState: ObservableObject {
     @Published private(set) var accessibilityStatus: AccessibilityPermissionStatus = .notTrusted
     @Published private(set) var statusMessage = "Starting HanToggle..."
     @Published private(set) var lastError: String?
+    @Published private(set) var conversionTestStatus: ConversionTestStatus = .notRun
     @Published private(set) var isAccessibilityTrusted = false
     @Published private(set) var lastDirection: ToggleDirection = .unchanged
     @Published private(set) var hotkeyDisplayName = GlobalHotkey.default.displayName
@@ -16,6 +17,7 @@ final class AppState: ObservableObject {
     @Published private(set) var isTextReplacementServiceReady = false
     @Published private(set) var showMenuBarItem = true
     @Published private(set) var launchAtLogin = false
+    @Published private(set) var currentIssue: AppIssue?
 
     private var lastErrorSource: ErrorSource?
 
@@ -24,7 +26,10 @@ final class AppState: ObservableObject {
     }
 
     var canCompleteSetup: Bool {
-        accessibilityStatus == .trusted && hasActiveHotkey && isTextReplacementServiceReady
+        accessibilityStatus == .trusted &&
+        hasActiveHotkey &&
+        isTextReplacementServiceReady &&
+        conversionTestStatus == .passed
     }
 
     var setupStatusTitle: String {
@@ -34,10 +39,12 @@ final class AppState: ObservableObject {
         case .trusted:
             if !isTextReplacementServiceReady {
                 "Text Converter"
-            } else if hasActiveHotkey {
-                "HanToggle is ready"
-            } else {
+            } else if !hasActiveHotkey {
                 "Keyboard Shortcut"
+            } else if conversionTestStatus != .passed {
+                "Test Conversion"
+            } else {
+                "HanToggle is ready"
             }
         }
     }
@@ -49,10 +56,19 @@ final class AppState: ObservableObject {
         case .trusted:
             if !isTextReplacementServiceReady {
                 TextReplacementError.converterInitializationFailed.localizedDescription
-            } else if hasActiveHotkey {
-                "Select Chinese text in most apps, then press \(hotkeyDisplayName)."
-            } else {
+            } else if !hasActiveHotkey {
                 "Choose a keyboard shortcut before completing setup."
+            } else {
+                switch conversionTestStatus {
+                case .notRun:
+                    "Run the local conversion test before completing setup."
+                case .running:
+                    "Testing local conversion..."
+                case .failed(let message):
+                    message
+                case .passed:
+                    "Select Chinese text in most apps, then press \(hotkeyDisplayName)."
+                }
             }
         }
     }
@@ -87,12 +103,41 @@ final class AppState: ObservableObject {
         statusMessage = "HanToggle is ready"
         lastError = nil
         lastErrorSource = nil
+        currentIssue = nil
     }
 
     func setError(_ message: String, source: ErrorSource = .general) {
+        switch source {
+        case .accessibility:
+            setIssue(.accessibilityRequired())
+        case .hotkey:
+            setIssue(.hotkeyInvalid(message))
+        case .general:
+            setIssue(.general(message))
+        }
+    }
+
+    func updateConversionTestStatus(_ status: ConversionTestStatus) {
+        conversionTestStatus = status
+    }
+
+    func updateConversionTestResult(_ result: ConversionTestResult) {
+        conversionTestStatus = result.status
+    }
+
+    func setIssue(_ issue: AppIssue) {
+        currentIssue = issue
         statusMessage = "HanToggle needs attention"
-        lastError = message
-        lastErrorSource = source
+        lastError = issue.message
+
+        switch issue.kind {
+        case .accessibilityRequired:
+            lastErrorSource = .accessibility
+        case .hotkeyInvalid, .hotkeyConflict:
+            lastErrorSource = .hotkey
+        default:
+            lastErrorSource = .general
+        }
     }
 
     func updateAccessibility(_ status: AccessibilityPermissionStatus) {
@@ -113,9 +158,7 @@ final class AppState: ObservableObject {
             setReady()
         case .notTrusted:
             isAccessibilityTrusted = false
-            statusMessage = "Accessibility Required"
-            lastError = "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
-            lastErrorSource = .accessibility
+            setIssue(.accessibilityRequired())
         }
     }
 
@@ -123,6 +166,7 @@ final class AppState: ObservableObject {
         lastDirection = result.direction
         lastError = nil
         lastErrorSource = nil
+        currentIssue = nil
 
         switch result.direction {
         case .simplifiedToTraditional:

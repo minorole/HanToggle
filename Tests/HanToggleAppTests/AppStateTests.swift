@@ -31,10 +31,69 @@ struct AppStateTests {
         state.updateAccessibility(.trusted)
         state.setTextReplacementServiceReady(true)
         state.confirmHotkeyActive("Control-Option-H")
+        state.updateConversionTestStatus(.passed)
 
         #expect(state.canCompleteSetup)
         #expect(state.setupStatusTitle == "HanToggle is ready")
         #expect(state.setupPrimaryMessage == "Select Chinese text in most apps, then press Control-Option-H.")
+    }
+
+    @Test("setup cannot complete until local conversion test passes")
+    func setupRequiresConversionTestPass() {
+        let state = AppState()
+
+        state.updateAccessibility(.trusted)
+        state.setTextReplacementServiceReady(true)
+        state.confirmHotkeyActive("Control-Option-H")
+
+        #expect(!state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "Test Conversion")
+        #expect(state.setupPrimaryMessage == "Run the local conversion test before completing setup.")
+
+        state.updateConversionTestStatus(.passed)
+
+        #expect(state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "HanToggle is ready")
+    }
+
+    @Test("conversion test failure blocks setup and exposes message")
+    func conversionTestFailureBlocksSetup() {
+        let state = AppState()
+
+        state.updateAccessibility(.trusted)
+        state.setTextReplacementServiceReady(true)
+        state.confirmHotkeyActive("Control-Option-H")
+        state.updateConversionTestStatus(.failed("HanToggle converted the sample incorrectly."))
+
+        #expect(!state.canCompleteSetup)
+        #expect(state.setupStatusTitle == "Test Conversion")
+        #expect(state.setupPrimaryMessage == "HanToggle converted the sample incorrectly.")
+    }
+
+    @Test("known app issue updates status and last error")
+    func appIssueUpdatesStatusAndLastError() {
+        let state = AppState()
+        let issue = AppIssue(textReplacementError: .pasteEventFailed)
+
+        state.setIssue(issue)
+
+        #expect(state.currentIssue == issue)
+        #expect(state.lastError == TextReplacementError.pasteEventFailed.localizedDescription)
+        #expect(state.statusMessage == "HanToggle needs attention")
+        #expect(state.menuBarSystemImageName == "exclamationmark.triangle")
+    }
+
+    @Test("successful toggle clears warning issues")
+    func successfulToggleClearsWarningIssue() {
+        let state = AppState()
+        let result = ToggleResult(text: "測試", direction: .simplifiedToTraditional, changedCharacterCount: 2)
+
+        state.setIssue(AppIssue(textReplacementError: .pasteEventFailed))
+        state.updateAfterToggle(result)
+
+        #expect(state.currentIssue == nil)
+        #expect(state.lastError == nil)
+        #expect(state.statusMessage == "Converted to Traditional")
     }
 
     @Test("setup is blocked when text replacement service is unavailable")
