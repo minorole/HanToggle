@@ -36,6 +36,20 @@ struct AppStateTests {
         #expect(state.hasActiveHotkey)
     }
 
+    @Test("successful hotkey update clears global error state")
+    func hotkeyUpdateSuccessClearsGlobalError() {
+        let state = AppState()
+
+        state.markHotkeyInactive("Could not register the shortcut.")
+        state.updateHotkeyDisplayName("Command-Shift-T")
+
+        #expect(state.hotkeyDisplayName == "Command-Shift-T")
+        #expect(state.lastError == nil)
+        #expect(state.statusMessage == "HanToggle is ready")
+        #expect(state.hasActiveHotkey)
+        #expect(state.hotkeyRecordingError == nil)
+    }
+
     @Test("marking hotkey inactive sets global error state")
     func markHotkeyInactiveSetsErrorState() {
         let state = AppState()

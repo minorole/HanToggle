@@ -70,6 +70,7 @@ final class AppState: ObservableObject {
         hotkeyDisplayName = displayName
         hasActiveHotkey = true
         hotkeyRecordingError = nil
+        setReady()
     }
 
     func setHotkeyRecordingError(_ error: String?) {

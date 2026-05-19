@@ -173,6 +173,38 @@ struct AppDelegateHotkeyValidationTests {
         ])
     }
 
+    @Test("successful candidate clears prior global hotkey error")
+    func successfulCandidateClearsPriorErrorState() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let hotkeyManager = FakeHotkeyManager()
+        let state = AppState()
+
+        state.markHotkeyInactive("Could not register the shortcut.")
+
+        let candidate = GlobalHotkey(keyCode: 2, modifiers: [.command])
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(candidate)
+
+        #expect(didSet)
+        #expect(state.lastError == nil)
+        #expect(state.statusMessage == "HanToggle is ready")
+        #expect(state.hotkeyDisplayName == candidate.displayName)
+        #expect(settings.hotkey == candidate)
+        #expect(hotkeyManager.startCalls == [candidate])
+        #expect(hotkeyManager.callHistory == [
+            "test(\(candidate.displayName))",
+            "start(\(candidate.displayName))"
+        ])
+    }
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
