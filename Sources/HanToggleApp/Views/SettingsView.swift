@@ -7,83 +7,105 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("General") {
-                VStack(alignment: .leading, spacing: 8) {
-                    if isRecordingHotkey {
-                        Text("Press new shortcut...")
-                        HotkeyRecorderView(
-                            onHotkeyCaptured: { hotkey in
-                                if appDelegate?.setHotkey(hotkey) == true {
-                                    isRecordingHotkey = false
-                                }
-                            },
-                            onCancel: {
-                                isRecordingHotkey = false
-                                state.setHotkeyRecordingError(nil)
-                            }
-                        )
-                        .frame(height: 1)
-
-                        HStack {
-                            Button("Cancel") {
-                                isRecordingHotkey = false
-                                state.setHotkeyRecordingError(nil)
-                            }
-
-                            Button("Reset") {
-                                if appDelegate?.resetHotkeyToDefault() == true {
-                                    isRecordingHotkey = false
-                                }
-                            }
-                        }
-                    } else {
-                        HStack {
-                            LabeledContent("Hotkey", value: state.hotkeyDisplayName)
-                            Button("Change...") {
-                                isRecordingHotkey = true
-                                state.setHotkeyRecordingError(nil)
-                            }
-                        }
-                    }
-
-                    if let hotkeyRecordingError = state.hotkeyRecordingError {
-                        Text(hotkeyRecordingError)
-                            .foregroundStyle(.red)
-                    }
-                }
-            }
-
-            Section("Menu Bar") {
-                Toggle("Show HanToggle in menu bar", isOn: showMenuBarItemBinding)
-            }
-
-            Section("Launch") {
-                Toggle("Launch at login", isOn: launchAtLoginBinding)
-            }
-
-            Section("Permissions") {
-                LabeledContent("Accessibility", value: accessibilityStatus)
-
-                HStack {
-                    Button("Request Permission") {
-                        appDelegate?.requestAccessibilityPermission()
-                    }
-
-                    Button("Open System Settings") {
-                        appDelegate?.openAccessibilitySettings()
-                    }
-                }
-            }
-
-            Section("About") {
-                LabeledContent("App", value: "HanToggle")
-                Text("Conversion happens locally. HanToggle does not send selected text, clipboard contents, or settings to a server.")
-                    .foregroundStyle(.secondary)
-            }
+            hotkeySection
+            permissionSection
+            menuBarSection
+            launchSection
+            privacySection
         }
         .formStyle(.grouped)
         .padding(20)
-        .frame(width: 460)
+        .frame(width: 520)
+    }
+
+    private var hotkeySection: some View {
+        Section("Hotkey") {
+            HStack {
+                Text("Shortcut")
+
+                Spacer()
+
+                if isRecordingHotkey {
+                    HotkeyRecorderView(
+                        onHotkeyCaptured: { hotkey in
+                            if appDelegate?.setHotkey(hotkey) == true {
+                                isRecordingHotkey = false
+                            }
+                        },
+                        onCancel: {
+                            isRecordingHotkey = false
+                            state.setHotkeyRecordingError(nil)
+                        }
+                    )
+                    .frame(width: 1, height: 1)
+
+                    Text("Press new shortcut...")
+                        .foregroundStyle(.secondary)
+
+                    Button("Cancel") {
+                        isRecordingHotkey = false
+                        state.setHotkeyRecordingError(nil)
+                    }
+
+                    Button("Reset") {
+                        if appDelegate?.resetHotkeyToDefault() == true {
+                            isRecordingHotkey = false
+                        }
+                        state.setHotkeyRecordingError(nil)
+                    }
+                } else {
+                    Text(state.hotkeyDisplayName)
+                        .foregroundStyle(.secondary)
+
+                    Button("Change...") {
+                        isRecordingHotkey = true
+                        state.setHotkeyRecordingError(nil)
+                    }
+                }
+            }
+
+            if let hotkeyRecordingError = state.hotkeyRecordingError {
+                Text(hotkeyRecordingError)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
+
+    private var permissionSection: some View {
+        Section("Accessibility") {
+            LabeledContent("Status", value: state.accessibilityStatusLabel)
+
+            Text(state.accessibilityGuidance)
+                .foregroundStyle(.secondary)
+
+            Button("Open Accessibility Settings") {
+                appDelegate?.openAccessibilitySettings()
+            }
+        }
+    }
+
+    private var menuBarSection: some View {
+        Section("Menu Bar") {
+            Toggle("Show HanToggle in menu bar", isOn: showMenuBarItemBinding)
+
+            if !state.hasActiveHotkey {
+                Text("A working hotkey is required before hiding the menu-bar item.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var launchSection: some View {
+        Section("Launch") {
+            Toggle("Launch at login", isOn: launchAtLoginBinding)
+        }
+    }
+
+    private var privacySection: some View {
+        Section("Privacy") {
+            Text("Conversion happens locally. HanToggle does not log, store, or transmit selected text or clipboard contents.")
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var showMenuBarItemBinding: Binding<Bool> {
@@ -106,17 +128,6 @@ struct SettingsView: View {
                 _ = appDelegate?.setLaunchAtLogin(newValue)
             }
         )
-    }
-
-    private var accessibilityStatus: String {
-        switch (state.isAccessibilityTrusted, state.canUseAccessibilityEvents) {
-        case (true, true):
-            "Allowed"
-        case (true, false):
-            "Restart needed"
-        case (false, _):
-            "Not allowed"
-        }
     }
 
     private var appDelegate: AppDelegate? {

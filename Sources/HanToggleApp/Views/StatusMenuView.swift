@@ -19,11 +19,7 @@ struct StatusMenuView: View {
 
             Text(lastError)
 
-            if shouldShowAccessibilityActions {
-                Button("Request Accessibility Permission") {
-                    appDelegate?.requestAccessibilityPermission()
-                }
-
+            if state.accessibilityStatus != .trusted {
                 Button("Open Accessibility Settings") {
                     appDelegate?.openAccessibilitySettings()
                 }
@@ -43,10 +39,6 @@ struct StatusMenuView: View {
 
     private var statusIconName: String {
         state.lastError == nil ? "checkmark.circle" : "exclamationmark.triangle"
-    }
-
-    private var shouldShowAccessibilityActions: Bool {
-        !state.isAccessibilityTrusted || state.lastError?.localizedCaseInsensitiveContains("accessibility") == true
     }
 
     private var appDelegate: AppDelegate? {

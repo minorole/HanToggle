@@ -23,6 +23,28 @@ final class AppState: ObservableObject {
         accessibilityStatus == .trusted
     }
 
+    var accessibilityStatusLabel: String {
+        switch accessibilityStatus {
+        case .trusted:
+            "Allowed"
+        case .trustedButEventsUnavailable:
+            "Restart needed"
+        case .notTrusted:
+            "Not allowed"
+        }
+    }
+
+    var accessibilityGuidance: String {
+        switch accessibilityStatus {
+        case .trusted:
+            "HanToggle can replace selected text with the configured hotkey."
+        case .trustedButEventsUnavailable:
+            "Restart HanToggle after enabling Accessibility."
+        case .notTrusted:
+            "Enable HanToggle in System Settings > Privacy & Security > Accessibility."
+        }
+    }
+
     var menuBarSystemImageName: String {
         guard showMenuBarItem, lastError != nil else {
             return "character.textbox"
