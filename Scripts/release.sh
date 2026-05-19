@@ -33,6 +33,7 @@ require_command codesign
 require_command xcrun
 require_command hdiutil
 require_command spctl
+require_command security
 
 if [[ "$DRAFT_GITHUB_RELEASE" == "1" ]]; then
     require_command gh
