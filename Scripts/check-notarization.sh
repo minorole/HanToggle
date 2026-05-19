@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROFILE="${NOTARY_PROFILE:-notarization-profile}"
 
-cd "$PROJECT_DIR"
-
-echo "Checking Apple notarytool profile '$PROFILE'..."
-
-if xcrun notarytool history --keychain-profile "$PROFILE"; then
-    echo "Notary profile '$PROFILE' is available."
+if xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
+    echo "Notary profile '$PROFILE' is usable."
+    exit 0
 else
-    echo "Notary profile '$PROFILE' check failed." >&2
-    echo "Check that the keychain profile exists and can access Apple notarization." >&2
+    echo "Notary profile '$PROFILE' is not usable." >&2
+    echo "Run this command for details:" >&2
+    echo "  xcrun notarytool history --keychain-profile $PROFILE" >&2
     exit 1
 fi
