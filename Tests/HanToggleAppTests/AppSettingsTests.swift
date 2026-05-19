@@ -1,0 +1,38 @@
+import Foundation
+import Testing
+@testable import HanToggleApp
+
+@Suite("AppSettings")
+struct AppSettingsTests {
+    @Test("defaults are used when no values are persisted")
+    func defaults() {
+        let settings = AppSettings(defaults: makeDefaults())
+
+        #expect(settings.hotkey == .default)
+        #expect(settings.showMenuBarStatus)
+        #expect(!settings.launchAtLogin)
+    }
+
+    @Test("settings persist through UserDefaults")
+    func persistence() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+
+        settings.hotkey = GlobalHotkey(keyCode: 17, modifiers: [.command, .shift])
+        settings.showMenuBarStatus = false
+        settings.launchAtLogin = true
+
+        let reloaded = AppSettings(defaults: defaults)
+
+        #expect(reloaded.hotkey == GlobalHotkey(keyCode: 17, modifiers: [.command, .shift]))
+        #expect(!reloaded.showMenuBarStatus)
+        #expect(reloaded.launchAtLogin)
+    }
+
+    private func makeDefaults() -> UserDefaults {
+        let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return defaults
+    }
+}

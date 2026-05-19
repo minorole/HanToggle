@@ -55,6 +55,10 @@ let package = Package(
             name: "HanToggleTests",
             dependencies: ["HanToggle"]
         ),
+        .testTarget(
+            name: "HanToggleAppTests",
+            dependencies: ["HanToggleApp"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
