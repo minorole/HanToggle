@@ -36,6 +36,19 @@ struct AppStateTests {
         #expect(state.hasActiveHotkey)
     }
 
+    @Test("marking hotkey inactive sets global error state")
+    func markHotkeyInactiveSetsErrorState() {
+        let state = AppState()
+        let message = "Could not register the shortcut."
+
+        state.markHotkeyInactive(message)
+
+        #expect(state.hotkeyRecordingError == message)
+        #expect(state.lastError == message)
+        #expect(state.statusMessage == "HanToggle needs attention")
+        #expect(!state.hasActiveHotkey)
+    }
+
     @Test("settings snapshot is loaded into app state")
     func updateSettings() {
         let state = AppState()

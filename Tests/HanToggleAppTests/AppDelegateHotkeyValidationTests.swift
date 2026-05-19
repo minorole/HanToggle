@@ -5,6 +5,8 @@ import Foundation
 @MainActor
 @Suite("AppDelegate hotkey validation")
 struct AppDelegateHotkeyValidationTests {
+    private let conflictMessage = "This shortcut is already in use or reserved by macOS. Choose another shortcut."
+
     @Test("invalid persisted hotkey is blocked before registration")
     func invalidPersistedHotkeyDoesNotRegister() {
         let defaults = makeDefaults()
@@ -54,6 +56,123 @@ struct AppDelegateHotkeyValidationTests {
         #expect(state.lastError == "This key is reserved for system navigation or text input. Choose another shortcut.")
     }
 
+    @Test("invalid candidate is rejected before registration")
+    func invalidCandidateDoesNotPersistOrRegister() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let hotkeyManager = FakeHotkeyManager()
+        let state = AppState()
+
+        let candidate = GlobalHotkey(keyCode: 53, modifiers: [.control])
+        let persistedCandidate = settings.hotkey
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(candidate)
+
+        #expect(!didSet)
+        #expect(settings.hotkey == persistedCandidate)
+        #expect(state.hotkeyRecordingError == "This key is reserved for system navigation or text input. Choose another shortcut.")
+        #expect(hotkeyManager.testRegistrationCalls == [])
+        #expect(hotkeyManager.startCalls == [])
+        #expect(hotkeyManager.callHistory == [])
+    }
+
+    @Test("candidate failing testRegistration is not persisted and does not start")
+    func testRegistrationFailureIsBlocking() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let hotkeyManager = FakeHotkeyManager(testRegistrationError: SettableTestError.registrationFailed)
+        let state = AppState()
+
+        let candidate = GlobalHotkey(keyCode: 8, modifiers: [.control])
+        let persistedCandidate = settings.hotkey
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(candidate)
+
+        #expect(!didSet)
+        #expect(settings.hotkey == persistedCandidate)
+        #expect(state.hotkeyRecordingError == conflictMessage)
+        #expect(hotkeyManager.testRegistrationCalls == [candidate])
+        #expect(hotkeyManager.startCalls == [])
+        #expect(hotkeyManager.callHistory == ["test(\(candidate.displayName))"])
+    }
+
+    @Test("candidate passing testRegistration but failing start is not persisted and marks inactive when no active hotkey")
+    func startFailureMarksInactiveAndKeepsStateConsistent() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let hotkeyManager = FakeHotkeyManager(startError: SettableTestError.startFailed)
+        let state = AppState()
+
+        let candidate = GlobalHotkey(keyCode: 9, modifiers: [.control])
+        let persistedCandidate = settings.hotkey
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(candidate)
+
+        #expect(!didSet)
+        #expect(settings.hotkey == persistedCandidate)
+        #expect(state.hotkeyRecordingError == conflictMessage)
+        #expect(state.lastError == conflictMessage)
+        #expect(!state.hasActiveHotkey)
+        #expect(hotkeyManager.testRegistrationCalls == [candidate])
+        #expect(hotkeyManager.startCalls == [candidate])
+        #expect(hotkeyManager.callHistory == [
+            "test(\(candidate.displayName))",
+            "start(\(candidate.displayName))"
+        ])
+    }
+
+    @Test("successful candidate is tested, started, and persisted")
+    func successfulCandidateIsPersistedAfterActivation() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let launchAtLoginManager = FakeLaunchAtLoginManager()
+        let hotkeyManager = FakeHotkeyManager(activeHotkey: GlobalHotkey(keyCode: 11, modifiers: [.control, .option]))
+        let state = AppState()
+
+        let candidate = GlobalHotkey(keyCode: 2, modifiers: [.command])
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: launchAtLoginManager,
+            state: state,
+            hotkeyManager: hotkeyManager
+        )
+
+        let didSet = appDelegate.setHotkey(candidate)
+
+        #expect(didSet)
+        #expect(settings.hotkey == candidate)
+        #expect(state.hotkeyRecordingError == nil)
+        #expect(state.hotkeyDisplayName == candidate.displayName)
+        #expect(state.hasActiveHotkey)
+        #expect(hotkeyManager.testRegistrationCalls == [candidate])
+        #expect(hotkeyManager.startCalls == [candidate])
+        #expect(hotkeyManager.callHistory == [
+            "test(\(candidate.displayName))",
+            "start(\(candidate.displayName))"
+        ])
+    }
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -64,18 +183,55 @@ struct AppDelegateHotkeyValidationTests {
 
 private final class FakeHotkeyManager: HotkeyManaging {
     var onHotkey: (() -> Void)?
+    var activeHotkey: GlobalHotkey?
     private(set) var startCalls: [GlobalHotkey] = []
     private(set) var stopCalls = 0
+    private(set) var testRegistrationCalls: [GlobalHotkey] = []
+    private(set) var callHistory: [String] = []
+    private let testRegistrationError: (any Error)?
+    private let startError: (any Error)?
+
+    init(
+        testRegistrationError: (any Error)? = nil,
+        startError: (any Error)? = nil,
+        activeHotkey: GlobalHotkey? = nil
+    ) {
+        self.testRegistrationError = testRegistrationError
+        self.startError = startError
+        self.activeHotkey = activeHotkey
+    }
 
     func start(hotkey: GlobalHotkey) throws {
         startCalls.append(hotkey)
+        callHistory.append("start(\(hotkey.displayName))")
+
+        if let startError {
+            throw startError
+        }
+
+        activeHotkey = hotkey
     }
 
     func stop() {
         stopCalls += 1
+        activeHotkey = nil
+    }
+
+    func testRegistration(hotkey: GlobalHotkey) throws {
+        testRegistrationCalls.append(hotkey)
+        callHistory.append("test(\(hotkey.displayName))")
+
+        if let testRegistrationError {
+            throw testRegistrationError
+        }
     }
 }
 
 private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
     func setEnabled(_ enabled: Bool) throws {}
+}
+
+private enum SettableTestError: Error {
+    case registrationFailed
+    case startFailed
 }

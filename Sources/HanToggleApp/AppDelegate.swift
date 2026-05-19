@@ -109,6 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func setHotkey(_ candidate: GlobalHotkey) -> Bool {
         let validation = HotkeyValidator.validate(candidate)
+        let conflictMessage = "This shortcut is already in use or reserved by macOS. Choose another shortcut."
 
         switch validation {
         case .valid:
@@ -120,13 +121,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             try hotkeyManager.testRegistration(hotkey: candidate)
-            settings.hotkey = candidate
-            applySettings()
-            return true
         } catch {
-            state.setHotkeyRecordingError("This shortcut is already in use or reserved by macOS. Choose another shortcut.")
+            state.setHotkeyRecordingError(conflictMessage)
             return false
         }
+
+        do {
+            try hotkeyManager.start(hotkey: candidate)
+        } catch {
+            state.setHotkeyRecordingError(conflictMessage)
+
+            if hotkeyManager.activeHotkey == nil {
+                state.markHotkeyInactive(conflictMessage)
+            }
+            return false
+        }
+
+        settings.hotkey = candidate
+        state.updateHotkeyDisplayName(candidate.displayName)
+        return true
     }
 
     func resetHotkeyToDefault() -> Bool {
@@ -145,7 +158,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .invalid:
             hotkeyManager.stop()
             let message = validation.errorMessage ?? "Choose another shortcut."
-            state.setError(message)
             state.markHotkeyInactive(message)
             return
         }

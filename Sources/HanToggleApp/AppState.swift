@@ -78,6 +78,7 @@ final class AppState: ObservableObject {
 
     func markHotkeyInactive(_ message: String) {
         hasActiveHotkey = false
+        setError(message)
         hotkeyRecordingError = message
     }
 
