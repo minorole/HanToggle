@@ -71,7 +71,7 @@ struct HotkeyManagerTests {
         }
 
         #expect(manager.activeHotkey == .default)
-        #expect(registrar.unregistered.count == 1)
+        #expect(registrar.unregistered.count == 2)
         #expect(registrar.registered.map(\.hotkey) == [.default, replacement])
     }
 
@@ -94,7 +94,25 @@ struct HotkeyManagerTests {
         }
 
         #expect(manager.activeHotkey == .default)
-        #expect(registrar.unregistered.count == 0)
+        #expect(registrar.unregistered.count == 2)
+    }
+
+    @Test("failed start removes newly installed event handler when no active hotkey exists")
+    func failedStartRemovesHandlerWhenNoActiveHotkeyExists() throws {
+        let registrar = FakeHotkeyRegistrar()
+        let manager = HotkeyManager(registrar: registrar)
+        registrar.nextRegistrationError = OSStatus(eventHotKeyExistsErr)
+
+        do {
+            try manager.start(hotkey: .default)
+            Issue.record("Expected registration failure.")
+        } catch HotkeyManagerError.hotkeyRegistrationFailed(let hotkey, let status) {
+            #expect(hotkey == GlobalHotkey.default.displayName)
+            #expect(status == OSStatus(eventHotKeyExistsErr))
+        }
+
+        #expect(manager.activeHotkey == nil)
+        #expect(manager.isEventHandlerInstalledForTesting == false)
     }
 
     @Test("test registration unregisters probe and does not replace active hotkey")
@@ -142,12 +160,11 @@ private final class FakeHotkeyRegistrar: HotkeyRegistering {
     }
 
     func unregister(_ token: HotkeyRegistrationToken) throws {
+        unregistered.append(token)
         let nextStatus = nextUnregistrationErrors.isEmpty ? noErr : nextUnregistrationErrors.removeFirst()
 
         if nextStatus != noErr {
             throw HotkeyRegistrarError.unregistrationFailed(status: nextStatus)
         }
-
-        unregistered.append(token)
     }
 }

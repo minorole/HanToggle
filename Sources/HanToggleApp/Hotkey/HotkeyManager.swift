@@ -84,6 +84,7 @@ final class HotkeyManager: HotkeyManaging {
 
     private var eventHandler: EventHandlerRef?
     private let registrar: HotkeyRegistering
+    var isEventHandlerInstalledForTesting: Bool { eventHandler != nil }
 
     init(registrar: HotkeyRegistering = CarbonHotkeyRegistrar()) {
         self.registrar = registrar
@@ -101,9 +102,19 @@ final class HotkeyManager: HotkeyManaging {
         }
 
         try installHandlerIfNeeded()
+        let hadActiveRegistration = activeRegistration != nil
 
         let hotkeyID = EventHotKeyID(signature: HotkeyManager.hotkeySignature, id: 1)
-        let candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+        let candidate: HotkeyRegistration
+        do {
+            candidate = try register(hotkey: hotkey, hotkeyID: hotkeyID)
+        } catch {
+            if !hadActiveRegistration {
+                removeEventHandlerIfNeeded()
+            }
+            throw error
+        }
+
         let previousRegistration = activeRegistration
 
         do {
@@ -146,15 +157,14 @@ final class HotkeyManager: HotkeyManaging {
 
     func stop() {
         if let activeRegistration {
+            // Cleanup is best effort during stop; if teardown fails, we still clear state
+            // so the app does not continue to believe a hotkey is active.
             try? registrar.unregister(activeRegistration.token)
             self.activeRegistration = nil
             activeHotkey = nil
         }
 
-        if let eventHandler {
-            RemoveEventHandler(eventHandler)
-            self.eventHandler = nil
-        }
+        removeEventHandlerIfNeeded()
     }
 
     private func installHandlerIfNeeded() throws {
@@ -178,6 +188,13 @@ final class HotkeyManager: HotkeyManaging {
         }
 
         eventHandler = handlerRef
+    }
+
+    private func removeEventHandlerIfNeeded() {
+        if let eventHandler {
+            RemoveEventHandler(eventHandler)
+            self.eventHandler = nil
+        }
     }
 
     private struct HotkeyRegistration {
