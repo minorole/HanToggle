@@ -29,7 +29,11 @@ struct PreferencesView: View {
                     message: accessibilitySetupMessage,
                     state: accessibilitySetupState
                 ) {
-                    EmptyView()
+                    if state.accessibilityStatus != .trusted {
+                        Button("Open Accessibility Settings") {
+                            actions.openAccessibilitySettings()
+                        }
+                    }
                 }
 
                 SetupChecklistRow(
@@ -87,8 +91,10 @@ struct PreferencesView: View {
             Text(state.accessibilityGuidance)
                 .foregroundStyle(.secondary)
 
-            Button("Open Accessibility Settings") {
-                actions.openAccessibilitySettings()
+            if !state.shouldShowSetupChecklist {
+                Button("Open Accessibility Settings") {
+                    actions.openAccessibilitySettings()
+                }
             }
         }
     }
