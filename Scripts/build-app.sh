@@ -19,7 +19,6 @@ SOURCE_ENTITLEMENTS="$PROJECT_DIR/Sources/HanToggleApp/Resources/HanToggle.entit
 BUILD_ENTITLEMENTS="$BUILD_DIR/HanToggle.entitlements"
 APP_ICON="$PROJECT_DIR/Sources/HanToggleApp/Resources/HanToggle.icns"
 MENU_BAR_ICON="$PROJECT_DIR/Sources/HanToggleApp/Resources/MenuBarIconTemplate.png"
-DEFAULT_SIGN_IDENTITY="Developer ID Application: Your Name (YOURTEAMID)"
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 
 cd "$PROJECT_DIR"
@@ -62,11 +61,7 @@ cp -R "$PRUNED_RESOURCE_DIR"/. "$SWIFTPM_BUILD_DIR/"
 rm -rf "$PRUNED_RESOURCE_DIR"
 
 if [[ -z "$SIGN_IDENTITY" ]]; then
-    if security find-identity -v -p codesigning 2>/dev/null | grep -F "$DEFAULT_SIGN_IDENTITY" >/dev/null; then
-        SIGN_IDENTITY="$DEFAULT_SIGN_IDENTITY"
-    else
-        SIGN_IDENTITY="-"
-    fi
+    SIGN_IDENTITY="-"
 fi
 
 if [[ "$SIGN_IDENTITY" == "-" ]]; then

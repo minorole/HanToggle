@@ -95,7 +95,17 @@ The scripts in `Scripts/` build and package local release artifacts:
 - `Scripts/check-notarization.sh` checks that the configured Apple notarytool keychain profile is available.
 - `Scripts/release.sh` runs tests, builds, signs, notarizes, staples, and creates a DMG.
 
-The notarized release flow requires local Apple signing credentials and a notarytool keychain profile such as `notarization-profile`. Those credentials are not stored in this repository.
+The notarized release flow requires local Apple signing credentials and a notarytool keychain profile. Those credentials are not stored in this repository.
+
+Example:
+
+```sh
+TEAM_ID="YOURTEAMID" \
+SIGN_IDENTITY="Developer ID Application: Your Name (YOURTEAMID)" \
+NOTARY_PROFILE="notarization-profile" \
+VERSION="0.1.0" \
+Scripts/release.sh
+```
 
 ## Architecture
 

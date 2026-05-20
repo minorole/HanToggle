@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 VERSION="${VERSION:-0.1.0}"
-TEAM_ID="${TEAM_ID:-YOURTEAMID}"
-SIGN_IDENTITY="${SIGN_IDENTITY:-Developer ID Application: Your Name (YOURTEAMID)}"
+TEAM_ID="${TEAM_ID:-}"
+SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-notarization-profile}"
 DRAFT_GITHUB_RELEASE="${DRAFT_GITHUB_RELEASE:-0}"
 
@@ -27,6 +27,13 @@ require_command() {
     fi
 }
 
+require_env() {
+    if [[ -z "${!1:-}" ]]; then
+        echo "Missing required environment variable: $1" >&2
+        exit 1
+    fi
+}
+
 require_command swift
 require_command lipo
 require_command codesign
@@ -34,6 +41,9 @@ require_command xcrun
 require_command hdiutil
 require_command spctl
 require_command security
+
+require_env TEAM_ID
+require_env SIGN_IDENTITY
 
 if [[ "$DRAFT_GITHUB_RELEASE" == "1" ]]; then
     require_command gh
