@@ -201,7 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state.updateShowDockIcon(showDockIcon)
             return true
         } catch {
-            state.setError(dockActivationFailureMessage)
+            state.setIssue(.dockIconVisibilityFailed(dockActivationFailureMessage))
             return false
         }
     }
@@ -328,7 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         state.updateShowMenuBarItem(true)
-        state.setError(dockActivationFailureMessage)
+        state.setIssue(.dockIconVisibilityFailed(dockActivationFailureMessage))
     }
 
     private func clearDockActivationFailureIfNeeded() {

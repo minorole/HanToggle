@@ -67,6 +67,8 @@ struct AppDelegateDockIconTests {
 
         #expect(!settings.showDockIcon)
         #expect(!state.showDockIcon)
+        #expect(state.statusMessage == "Dock icon update failed")
+        #expect(state.currentIssue?.kind == .dockIconVisibilityFailed)
         #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
         #expect(activationPolicyManager.appliedPolicies == [.regular])
     }

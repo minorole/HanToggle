@@ -10,6 +10,7 @@ enum AppIssueKind: Equatable {
     case clipboardRestoreFailed
     case converterUnavailable
     case replacementAlreadyInProgress
+    case dockIconVisibilityFailed
     case general
 }
 
@@ -79,6 +80,25 @@ struct AppIssue: Equatable {
             severity: .warning,
             recoveryActions: [.openPreferences]
         )
+    }
+
+    static func dockIconVisibilityFailed(_ message: String) -> AppIssue {
+        AppIssue(
+            message: message,
+            kind: .dockIconVisibilityFailed,
+            severity: .warning,
+            recoveryActions: [.openPreferences],
+            hint: "HanToggle is still running from the menu bar."
+        )
+    }
+
+    var statusMessage: String {
+        switch kind {
+        case .dockIconVisibilityFailed:
+            "Dock icon update failed"
+        default:
+            "HanToggle needs attention"
+        }
     }
 
     init(textReplacementError error: TextReplacementError) {

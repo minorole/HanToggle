@@ -136,7 +136,7 @@ final class AppState: ObservableObject {
 
     func setIssue(_ issue: AppIssue) {
         currentIssue = issue
-        statusMessage = "HanToggle needs attention"
+        statusMessage = issue.statusMessage
         lastError = issue.message
 
         switch issue.kind {
