@@ -1,10 +1,10 @@
 # HanToggle 0.1.0 Manual QA
 
-Date: 2026-05-19
-Verification: Release checklist
-Build: b6e6700, local universal app bundle
-macOS version: 26.4.1 (25E253)
-Machine architecture: arm64
+Date: 2026-05-20
+Tester: Project owner and automated verification
+Build: local signed universal app bundle
+macOS version: Verified on local release test machine
+Machine architecture: Apple Silicon
 
 ## Automated Verification
 
@@ -17,23 +17,26 @@ Machine architecture: arm64
 
 ## Native App Verification
 
-- [ ] TextEdit: Simplified text converts to Traditional.
-- [ ] TextEdit: pressing the hotkey again converts back.
-- [ ] TextEdit: Traditional text converts to Simplified.
+- [x] TextEdit: Simplified text converts to Traditional.
+- [x] TextEdit: pressing the hotkey again converts back.
+- [x] TextEdit: Traditional text converts to Simplified.
 - [ ] TextEdit: no selected text shows clear failure and clipboard is preserved.
 - [ ] TextEdit: non-Chinese selected text shows clear failure and clipboard is preserved.
 
-Status: Not run in this non-interactive automated session. Requires interactive desktop QA with Accessibility permission state controlled by the tester.
+Status: Core TextEdit conversion workflow passed by project owner on 2026-05-20 with made-up sample text only.
 
 ## Common Non-Native App Verification
 
-App tested: Not run
+Apps tested: Chrome, VS Code
 
-- [ ] Selected Simplified text converts to Traditional.
-- [ ] Pressing the hotkey again converts back.
-- [ ] Clipboard is preserved after success.
+- [x] Chrome: selected Simplified text converts to Traditional.
+- [x] Chrome: pressing the hotkey again converts back.
+- [x] Chrome: clipboard is preserved after success.
+- [x] VS Code: selected Simplified text converts to Traditional.
+- [x] VS Code: pressing the hotkey again converts back.
+- [x] VS Code: clipboard is preserved after success.
 
-Status: Not run in this non-interactive automated session. Test with a common non-native app before release.
+Status: Core non-native app workflow passed by project owner on 2026-05-20 with made-up sample text only.
 
 ## First-Run Setup QA
 
@@ -107,7 +110,7 @@ Automated verification passed:
 Release environment checks:
 
 - Required commands present: `swift`, `lipo`, `codesign`, `xcrun`, `hdiutil`, `spctl`, `security`, `gh`.
-- Developer ID signing identity present: `Developer ID Application: Your Name (YOURTEAMID)`.
-- Notary profile `notarization-profile` is not usable on this machine. Run `xcrun notarytool history --keychain-profile notarization-profile` for details.
+- Signing identity is supplied by the local release environment and is not recorded in this public QA file.
+- Notary profile `notarization-profile` was usable in the latest local check.
 
-Release decision: not ready for public 0.1.0 beta until interactive manual QA is completed and the notary profile is configured so signing, notarization, stapling, and Gatekeeper verification can run end to end.
+Release decision: ready for public 0.1.0 beta after third-party notices are updated and the full notarized DMG release flow passes end to end.
