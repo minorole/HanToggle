@@ -76,8 +76,10 @@ struct SetupAssistantView: View {
             message: conversionTestMessage,
             state: conversionTestRowState
         ) {
-            ConversionTestView(status: state.conversionTestStatus) {
-                appDelegate?.runConversionTest()
+            if state.isTextReplacementServiceReady {
+                ConversionTestView(status: state.conversionTestStatus) {
+                    appDelegate?.runConversionTest()
+                }
             }
         }
     }
@@ -103,26 +105,30 @@ struct SetupAssistantView: View {
     }
 
     private var conversionTestMessage: String {
+        guard state.isTextReplacementServiceReady else {
+            return TextReplacementError.converterInitializationFailed.localizedDescription
+        }
+
         switch state.conversionTestStatus {
-        case .notRun:
-            "Confirm the local converter works before finishing setup."
-        case .running:
-            "Testing local conversion..."
         case .passed:
-            "Local conversion is working."
-        case .failed(let message):
-            message
+            return "Local conversion is working."
+        default:
+            return "Confirm the local converter works before finishing setup."
         }
     }
 
     private var conversionTestRowState: SetupChecklistRowState {
+        guard state.isTextReplacementServiceReady else {
+            return .needsAction
+        }
+
         switch state.conversionTestStatus {
         case .passed:
-            .ready
+            return .ready
         case .running:
-            .inProgress
+            return .inProgress
         case .notRun, .failed:
-            .needsAction
+            return .needsAction
         }
     }
 
