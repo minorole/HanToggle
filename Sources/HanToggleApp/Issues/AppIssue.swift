@@ -20,8 +20,7 @@ enum AppIssueSeverity: Equatable {
 
 enum RecoveryAction: Equatable {
     case openAccessibilitySettings
-    case openSettings
-    case openSetup
+    case openPreferences
     case changeShortcut
 }
 
@@ -51,7 +50,7 @@ struct AppIssue: Equatable {
             message: "Accessibility permission is required before HanToggle can convert selected text.",
             kind: .accessibilityRequired,
             severity: .blocking,
-            recoveryActions: [.openAccessibilitySettings, .openSetup]
+            recoveryActions: [.openAccessibilitySettings, .openPreferences]
         )
     }
 
@@ -78,7 +77,7 @@ struct AppIssue: Equatable {
             message: message,
             kind: .general,
             severity: .warning,
-            recoveryActions: [.openSettings]
+            recoveryActions: [.openPreferences]
         )
     }
 
@@ -91,7 +90,7 @@ struct AppIssue: Equatable {
                 message: error.localizedDescription,
                 kind: .copyFailed,
                 severity: .blocking,
-                recoveryActions: [.openSettings],
+                recoveryActions: [.openPreferences],
                 hint: "HanToggle did not change selected text because it could not safely preserve the current clipboard."
             )
         case .copyEventFailed:
@@ -99,7 +98,7 @@ struct AppIssue: Equatable {
                 message: error.localizedDescription,
                 kind: .copyFailed,
                 severity: .warning,
-                recoveryActions: [.openSettings],
+                recoveryActions: [.openPreferences],
                 hint: "Select editable text and try again."
             )
         case .noSelectedChineseTextFoundOrUnchangedSelection:
@@ -107,7 +106,7 @@ struct AppIssue: Equatable {
                 message: error.localizedDescription,
                 kind: .noConvertibleSelection,
                 severity: .warning,
-                recoveryActions: [.openSettings],
+                recoveryActions: [.openPreferences],
                 hint: "Select Chinese text, then press the configured hotkey."
             )
         case .pasteEventFailed:
@@ -115,7 +114,7 @@ struct AppIssue: Equatable {
                 message: error.localizedDescription,
                 kind: .pasteFailed,
                 severity: .warning,
-                recoveryActions: [.openSettings],
+                recoveryActions: [.openPreferences],
                 hint: "The current app may block simulated paste. Try TextEdit to confirm HanToggle is working."
             )
         case .clipboardRestoreFailed:
@@ -123,7 +122,7 @@ struct AppIssue: Equatable {
                 message: error.localizedDescription,
                 kind: .clipboardRestoreFailed,
                 severity: .blocking,
-                recoveryActions: [.openSettings],
+                recoveryActions: [.openPreferences],
                 hint: "Clipboard restore failed. Avoid copying new private data until you confirm the clipboard contents."
             )
         case .converterInitializationFailed:
@@ -131,7 +130,7 @@ struct AppIssue: Equatable {
                 message: error.localizedDescription,
                 kind: .converterUnavailable,
                 severity: .blocking,
-                recoveryActions: [.openSettings],
+                recoveryActions: [.openPreferences],
                 hint: "The local converter could not start."
             )
         case .replacementAlreadyInProgress:

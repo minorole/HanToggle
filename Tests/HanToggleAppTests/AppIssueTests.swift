@@ -3,13 +3,13 @@ import Testing
 
 @Suite("AppIssue")
 struct AppIssueTests {
-    @Test("accessibility issue maps to accessibility and setup recovery")
+    @Test("accessibility issue maps to accessibility and preferences recovery")
     func accessibilityIssueActions() {
         let issue = AppIssue.accessibilityRequired()
 
         #expect(issue.kind == .accessibilityRequired)
         #expect(issue.severity == .blocking)
-        #expect(issue.recoveryActions == [.openAccessibilitySettings, .openSetup])
+        #expect(issue.recoveryActions == [.openAccessibilitySettings, .openPreferences])
         #expect(issue.message == "Accessibility permission is required before HanToggle can convert selected text.")
     }
 
@@ -23,19 +23,19 @@ struct AppIssueTests {
         #expect(AppIssue(textReplacementError: .replacementAlreadyInProgress).kind == .replacementAlreadyInProgress)
         #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).kind == .accessibilityRequired)
         #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).severity == .blocking)
-        #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).recoveryActions == [.openAccessibilitySettings, .openSetup])
+        #expect(AppIssue(textReplacementError: .missingAccessibilityPermission).recoveryActions == [.openAccessibilitySettings, .openPreferences])
         #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).kind == .copyFailed)
         #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).severity == .blocking)
-        #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).recoveryActions == [.openSettings])
+        #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).recoveryActions == [.openPreferences])
         #expect(AppIssue(textReplacementError: .incompleteClipboardSnapshot).hint == "HanToggle did not change selected text because it could not safely preserve the current clipboard.")
     }
 
-    @Test("clipboard restore failure is blocking and tells user to open settings")
+    @Test("clipboard restore failure is blocking and tells user to open preferences")
     func clipboardRestoreFailureIsBlocking() {
         let issue = AppIssue(textReplacementError: .clipboardRestoreFailed)
 
         #expect(issue.severity == .blocking)
-        #expect(issue.recoveryActions == [.openSettings])
+        #expect(issue.recoveryActions == [.openPreferences])
         #expect(issue.hint == "Clipboard restore failed. Avoid copying new private data until you confirm the clipboard contents.")
     }
 
@@ -43,7 +43,7 @@ struct AppIssueTests {
     func pasteFailureHint() {
         let issue = AppIssue(textReplacementError: .pasteEventFailed)
 
-        #expect(issue.recoveryActions == [.openSettings])
+        #expect(issue.recoveryActions == [.openPreferences])
         #expect(issue.hint == "The current app may block simulated paste. Try TextEdit to confirm HanToggle is working.")
     }
 

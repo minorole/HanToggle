@@ -52,12 +52,8 @@ struct StatusMenuView: View {
             Button("Open Accessibility Settings") {
                 actions.openAccessibilitySettings()
             }
-        case .openSettings:
-            Button("Open Settings") {
-                actions.showPreferencesWindow()
-            }
-        case .openSetup:
-            Button("Setup HanToggle") {
+        case .openPreferences:
+            Button("Open Preferences") {
                 actions.showPreferencesWindow()
             }
         case .changeShortcut:

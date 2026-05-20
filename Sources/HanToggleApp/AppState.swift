@@ -171,7 +171,7 @@ final class AppState: ObservableObject {
                     message: "Enable HanToggle in System Settings > Privacy & Security > Accessibility.",
                     kind: .accessibilityRequired,
                     severity: .blocking,
-                    recoveryActions: [.openAccessibilitySettings, .openSetup]
+                    recoveryActions: [.openAccessibilitySettings, .openPreferences]
                 )
             )
             statusMessage = "Accessibility Required"
