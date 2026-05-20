@@ -66,7 +66,7 @@ HanToggle converts text locally and does not log, store, or transmit selected te
 5. Return to HanToggle.
 6. Click **Done** when HanToggle reports it is ready.
 
-After setup, HanToggle runs from the menu bar and does not appear in the Dock.
+After setup, HanToggle runs from the menu bar and does not appear in the Dock by default. You can enable **Show HanToggle in Dock** in Preferences if you want Dock access.
 
 ## Hotkey Conflicts
 
