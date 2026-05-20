@@ -1,15 +1,48 @@
+# macOS and editor noise
 .DS_Store
+*.swp
+*.swo
+*~
+
+# Local agent and planning files
 AGENTS.md
 .agents/
 .codex/
 docs/superpowers/
-/.build
+
+# SwiftPM and Xcode local state
+.build/
 /build/
 /Packages
-xcuserdata/
 DerivedData/
-.swiftpm/configuration/registries.json
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+.swiftpm/configuration/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
-.netrc
+
+# Release artifacts
+*.app
 *.dmg
 *.zip
+*.pkg
+*.tar.gz
+*.xcarchive
+*.dSYM/
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Local environment and credentials
+.env
+.env.*
+.netrc
+*.p12
+*.cer
+*.keychain
+*.keychain-db
+*.developerprofile
+*.mobileprovision
+*.provisionprofile
