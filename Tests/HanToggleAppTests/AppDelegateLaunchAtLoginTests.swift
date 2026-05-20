@@ -6,11 +6,11 @@ import Testing
 @MainActor
 @Suite("AppDelegate launch at login")
 struct AppDelegateLaunchAtLoginTests {
-    @Test("launch at login status updates after OS registration succeeds")
-    func launchAtLoginPersistsAfterRegistrationSucceeds() {
+    @Test("launch at login refreshes from service status after registration succeeds but requires approval")
+    func launchAtLoginRefreshesAfterRegistrationSucceedsButRequiresApproval() {
         let defaults = makeDefaults()
         let settings = AppSettings(defaults: defaults)
-        let manager = FakeLaunchAtLoginManager()
+        let manager = FakeLaunchAtLoginManager(statuses: [.disabled, .requiresApproval])
         let state = AppState()
         let appDelegate = AppDelegate(
             settings: settings,
@@ -19,24 +19,33 @@ struct AppDelegateLaunchAtLoginTests {
             hotkeyManager: FakeHotkeyManager()
         )
 
+        appDelegate.applicationDidBecomeActive(Notification(name: NSApplication.didBecomeActiveNotification))
+        #expect(state.launchAtLoginStatus == .disabled)
+
         let didUpdate = appDelegate.setLaunchAtLogin(true)
 
         #expect(didUpdate)
-        #expect(state.launchAtLoginStatus == .enabled)
+        #expect(state.launchAtLoginStatus == .requiresApproval)
         #expect(manager.requests == [true])
     }
 
-    @Test("launch at login failure keeps service status and shows error")
-    func launchAtLoginFailureKeepsPreviousSettingAndShowsError() {
+    @Test("launch at login failure refreshes real service status and shows error")
+    func launchAtLoginFailureRefreshesStatusAndShowsError() {
         let defaults = makeDefaults()
         let settings = AppSettings(defaults: defaults)
-        let manager = FakeLaunchAtLoginManager(error: LaunchAtLoginTestError.failed)
+        let manager = FakeLaunchAtLoginManager(
+            statuses: [.enabled, .disabled],
+            error: LaunchAtLoginTestError.failed
+        )
         let state = AppState()
         let appDelegate = AppDelegate(
             settings: settings,
             launchAtLoginManager: manager,
             state: state
         )
+
+        appDelegate.applicationDidBecomeActive(Notification(name: NSApplication.didBecomeActiveNotification))
+        #expect(state.launchAtLoginStatus == .enabled)
 
         let didUpdate = appDelegate.setLaunchAtLogin(true)
 
@@ -121,17 +130,26 @@ struct AppDelegateLaunchAtLoginTests {
 }
 
 private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
+    private var statuses: [LaunchAtLoginStatus]
     private let error: (any Error)?
-    private var statusValue: LaunchAtLoginStatus
     private(set) var requests: [Bool] = []
 
     init(error: (any Error)? = nil, status: LaunchAtLoginStatus = .disabled) {
+        self.statuses = [status]
         self.error = error
-        self.statusValue = status
+    }
+
+    init(statuses: [LaunchAtLoginStatus], error: (any Error)? = nil) {
+        self.statuses = statuses
+        self.error = error
     }
 
     func status() -> LaunchAtLoginStatus {
-        statusValue
+        if statuses.count > 1 {
+            return statuses.removeFirst()
+        }
+
+        return statuses.first ?? .disabled
     }
 
     func setEnabled(_ enabled: Bool) throws {
@@ -140,8 +158,6 @@ private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
         if let error {
             throw error
         }
-
-        statusValue = enabled ? .enabled : .disabled
     }
 }
 
