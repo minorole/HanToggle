@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkeyManager: any HotkeyManaging
     private let permissionManager: any AccessibilityPermissionChecking
     private let launchAtLoginManager: any LaunchAtLoginManaging
+    private let activationPolicyManager: any ApplicationActivationPolicyManaging
     private let preferencesWindowPresenter: any PreferencesWindowPresenting
     private let conversionTestServiceFactory: () throws -> ConversionTestService
     private var textReplacementService: TextReplacementService?
@@ -18,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.launchAtLoginManager = LaunchAtLoginManager()
         self.hotkeyManager = HotkeyManager()
         self.permissionManager = AccessibilityPermissionManager()
+        self.activationPolicyManager = ApplicationActivationPolicyManager()
         self.state = .shared
         self.preferencesWindowPresenter = AppKitPreferencesWindowPresenter(state: self.state)
         self.conversionTestServiceFactory = { try ConversionTestService() }
@@ -31,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state: AppState,
         hotkeyManager: any HotkeyManaging = HotkeyManager(),
         permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager(),
+        activationPolicyManager: any ApplicationActivationPolicyManaging = ApplicationActivationPolicyManager(),
         conversionTestServiceFactory: @escaping () throws -> ConversionTestService = { try ConversionTestService() },
         preferencesWindowPresenter: (any PreferencesWindowPresenting)? = nil
     ) {
@@ -38,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.launchAtLoginManager = launchAtLoginManager
         self.hotkeyManager = hotkeyManager
         self.permissionManager = permissionManager
+        self.activationPolicyManager = activationPolicyManager
         self.conversionTestServiceFactory = conversionTestServiceFactory
         self.state = state
         self.preferencesWindowPresenter = preferencesWindowPresenter ?? AppKitPreferencesWindowPresenter(state: state)
@@ -46,9 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if NSApp != nil {
-            NSApp.setActivationPolicy(.accessory)
-        }
+        applyDockIconVisibility(settings.showDockIcon)
+
         hotkeyManager.onHotkey = { [weak self] in
             self?.toggleSelection()
         }
@@ -137,6 +140,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.showMenuBarItem = allowedValue
         state.updateShowMenuBarItem(allowedValue)
         applySettings()
+    }
+
+    func setShowDockIcon(_ showDockIcon: Bool) {
+        let previousValue = settings.showDockIcon
+
+        guard applyDockIconVisibility(showDockIcon) else {
+            settings.showDockIcon = previousValue
+            state.updateShowDockIcon(previousValue)
+            return
+        }
+
+        settings.showDockIcon = showDockIcon
+        state.updateShowDockIcon(showDockIcon)
+    }
+
+    @discardableResult
+    private func applyDockIconVisibility(_ showDockIcon: Bool) -> Bool {
+        let policy: HanToggleActivationPolicy = showDockIcon ? .regular : .accessory
+
+        do {
+            try activationPolicyManager.apply(policy)
+            state.updateShowDockIcon(showDockIcon)
+            return true
+        } catch {
+            state.setError("HanToggle could not update Dock icon visibility.")
+            return false
+        }
     }
 
     func toggleSelection() {
@@ -324,6 +354,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             setShowMenuBarItem: { [weak self] showMenuBarItem in
                 self?.setShowMenuBarItem(showMenuBarItem)
+            },
+            setShowDockIcon: { [weak self] showDockIcon in
+                self?.setShowDockIcon(showDockIcon)
             },
             setLaunchAtLogin: { [weak self] enabled in
                 self?.setLaunchAtLogin(enabled) == true
