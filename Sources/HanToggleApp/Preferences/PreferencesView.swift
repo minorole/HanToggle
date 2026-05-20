@@ -20,18 +20,40 @@ struct PreferencesView: View {
         .padding(20)
     }
 
+    @ViewBuilder
     private var setupSection: some View {
-        Section("Setup") {
-            LabeledContent("Status", value: state.setupStatusTitle)
+        if state.shouldShowSetupChecklist {
+            Section("Setup") {
+                SetupChecklistRow(
+                    title: "Accessibility",
+                    message: accessibilitySetupMessage,
+                    state: accessibilitySetupState
+                ) {
+                    EmptyView()
+                }
 
-            Text(state.setupPrimaryMessage)
-                .foregroundStyle(.secondary)
+                SetupChecklistRow(
+                    title: "Keyboard Shortcut",
+                    message: keyboardShortcutSetupMessage,
+                    state: keyboardShortcutSetupState
+                ) {
+                    EmptyView()
+                }
 
-            Button("Done") {
-                _ = actions.completeSetup()
+                SetupChecklistRow(
+                    title: "Test Conversion",
+                    message: conversionTestSetupMessage,
+                    state: conversionTestSetupState
+                ) {
+                    EmptyView()
+                }
+
+                Button("Done") {
+                    _ = actions.completeSetup()
+                }
+                .disabled(!state.canCompleteSetup)
+                .keyboardShortcut(.defaultAction)
             }
-            .disabled(!state.canCompleteSetup)
-            .keyboardShortcut(.defaultAction)
         }
     }
 
@@ -112,5 +134,58 @@ struct PreferencesView: View {
             get: { state.launchAtLoginStatus.isEnabled },
             set: { _ = actions.setLaunchAtLogin($0) }
         )
+    }
+
+    private var accessibilitySetupState: SetupChecklistRowState {
+        state.accessibilityStatus == .trusted ? .ready : .needsAction
+    }
+
+    private var accessibilitySetupMessage: String {
+        switch state.accessibilityStatus {
+        case .trusted:
+            "Allowed"
+        case .notTrusted:
+            "Enable HanToggle in Accessibility settings."
+        }
+    }
+
+    private var keyboardShortcutSetupState: SetupChecklistRowState {
+        state.hasActiveHotkey ? .ready : .needsAction
+    }
+
+    private var keyboardShortcutSetupMessage: String {
+        state.hasActiveHotkey ? state.hotkeyDisplayName : "Choose a keyboard shortcut."
+    }
+
+    private var conversionTestSetupState: SetupChecklistRowState {
+        guard state.isTextReplacementServiceReady else {
+            return .needsAction
+        }
+
+        switch state.conversionTestStatus {
+        case .passed:
+            return .ready
+        case .running:
+            return .inProgress
+        case .notRun, .failed:
+            return .needsAction
+        }
+    }
+
+    private var conversionTestSetupMessage: String {
+        guard state.isTextReplacementServiceReady else {
+            return TextReplacementError.converterInitializationFailed.localizedDescription
+        }
+
+        switch state.conversionTestStatus {
+        case .notRun:
+            return "Run the local conversion test."
+        case .running:
+            return "Testing local conversion..."
+        case .passed:
+            return "Local conversion is working."
+        case .failed(let message):
+            return message
+        }
     }
 }
