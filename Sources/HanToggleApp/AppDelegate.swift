@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let launchAtLoginManager: any LaunchAtLoginManaging
     private let activationPolicyManager: any ApplicationActivationPolicyManaging
     private let preferencesWindowPresenter: any PreferencesWindowPresenting
+    private let supportEmailOpener: any SupportEmailOpening
     private let conversionTestServiceFactory: () throws -> ConversionTestService
     private var textReplacementService: TextReplacementService?
     private var requiresMenuBarItemForDockActivationFailure = false
@@ -28,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.activationPolicyManager = ApplicationActivationPolicyManager()
         self.state = .shared
         self.preferencesWindowPresenter = AppKitPreferencesWindowPresenter(state: self.state)
+        self.supportEmailOpener = SupportEmailOpener()
         self.conversionTestServiceFactory = { try ConversionTestService() }
         super.init()
         Self.shared = self
@@ -41,7 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager(),
         activationPolicyManager: any ApplicationActivationPolicyManaging = ApplicationActivationPolicyManager(),
         conversionTestServiceFactory: @escaping () throws -> ConversionTestService = { try ConversionTestService() },
-        preferencesWindowPresenter: (any PreferencesWindowPresenting)? = nil
+        preferencesWindowPresenter: (any PreferencesWindowPresenting)? = nil,
+        supportEmailOpener: any SupportEmailOpening = SupportEmailOpener()
     ) {
         self.settings = settings
         self.launchAtLoginManager = launchAtLoginManager
@@ -51,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.conversionTestServiceFactory = conversionTestServiceFactory
         self.state = state
         self.preferencesWindowPresenter = preferencesWindowPresenter ?? AppKitPreferencesWindowPresenter(state: state)
+        self.supportEmailOpener = supportEmailOpener
         super.init()
         Self.shared = self
     }
@@ -126,6 +130,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard didOpenSettings else {
             state.setError("HanToggle could not open Accessibility settings. Open System Settings > Privacy & Security > Accessibility manually.")
+            return
+        }
+    }
+
+    func openSupportEmail() {
+        guard supportEmailOpener.openSupportEmail() else {
+            state.setError("HanToggle could not open your email app. Email \(SupportContact.emailAddress) manually.")
             return
         }
     }
@@ -389,6 +400,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             openAccessibilitySettings: { [weak self] in
                 self?.openAccessibilitySettings()
+            },
+            openSupportEmail: { [weak self] in
+                self?.openSupportEmail()
             },
             runConversionTest: { [weak self] in
                 self?.runConversionTest()

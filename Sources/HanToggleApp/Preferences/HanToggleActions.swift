@@ -3,6 +3,7 @@ import SwiftUI
 struct HanToggleActions: Sendable {
     var showPreferencesWindow: @MainActor @Sendable () -> Void = {}
     var openAccessibilitySettings: @MainActor @Sendable () -> Void = {}
+    var openSupportEmail: @MainActor @Sendable () -> Void = {}
     var runConversionTest: @MainActor @Sendable () -> Void = {}
     var setHotkey: @MainActor @Sendable (GlobalHotkey) -> Bool = { _ in false }
     var resetHotkeyToDefault: @MainActor @Sendable () -> Bool = { false }
