@@ -5,6 +5,7 @@ struct AppSettings {
         static let hotkey = "hotkey"
         static let showMenuBarItem = "showMenuBarItem"
         static let legacyShowMenuBarStatus = "showMenuBarStatus"
+        static let showDockIcon = "showDockIcon"
         static let hasCompletedSetup = "hasCompletedSetup"
     }
 
@@ -43,6 +44,15 @@ struct AppSettings {
         }
         nonmutating set {
             defaults.set(newValue, forKey: Key.showMenuBarItem)
+        }
+    }
+
+    var showDockIcon: Bool {
+        get {
+            defaults.bool(forKey: Key.showDockIcon)
+        }
+        nonmutating set {
+            defaults.set(newValue, forKey: Key.showDockIcon)
         }
     }
 
