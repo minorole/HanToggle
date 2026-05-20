@@ -85,6 +85,11 @@ struct PreferencesView: View {
     private var launchSection: some View {
         Section("Launch") {
             Toggle("Launch at login", isOn: launchAtLoginBinding)
+
+            if let message = state.launchAtLoginStatus.message {
+                Text(message)
+                    .foregroundStyle(state.launchAtLoginStatus.isProblem ? .red : .secondary)
+            }
         }
     }
 
@@ -104,7 +109,7 @@ struct PreferencesView: View {
 
     private var launchAtLoginBinding: Binding<Bool> {
         Binding(
-            get: { state.launchAtLogin },
+            get: { state.launchAtLoginStatus.isEnabled },
             set: { _ = actions.setLaunchAtLogin($0) }
         )
     }

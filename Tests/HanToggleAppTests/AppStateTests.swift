@@ -236,12 +236,40 @@ struct AppStateTests {
         state.updateSettings(
             hotkeyDisplayName: "Control-Option-H",
             showMenuBarItem: false,
-            launchAtLogin: true
+            hasCompletedSetup: true,
+            launchAtLoginStatus: .enabled
         )
 
         #expect(state.hotkeyDisplayName == "Control-Option-H")
         #expect(state.showMenuBarItem)
-        #expect(state.launchAtLogin)
+        #expect(state.hasCompletedSetup)
+        #expect(state.launchAtLoginStatus == .enabled)
+    }
+
+    @Test("launch at login status is stored from service state")
+    func launchAtLoginStatusStoredFromServiceState() {
+        let state = AppState()
+
+        state.updateLaunchAtLoginStatus(.requiresApproval)
+
+        #expect(state.launchAtLoginStatus == .requiresApproval)
+        #expect(!state.launchAtLoginStatus.isEnabled)
+        #expect(state.launchAtLoginStatus.isProblem)
+    }
+
+    @Test("setup checklist visibility uses setup completion and blocking service state")
+    func setupChecklistVisibility() {
+        let state = AppState()
+
+        #expect(state.shouldShowSetupChecklist)
+
+        state.updateAccessibility(.trusted)
+        state.setTextReplacementServiceReady(true)
+        state.confirmHotkeyActive("Control-Option-H")
+        state.updateConversionTestStatus(.passed)
+        state.markSetupCompleted()
+
+        #expect(!state.shouldShowSetupChecklist)
     }
 
     @Test("menu bar can be hidden with active hotkey")

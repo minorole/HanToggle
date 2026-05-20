@@ -97,7 +97,7 @@ struct SettingsView: View {
 
     private var launchAtLoginBinding: Binding<Bool> {
         Binding(
-            get: { state.launchAtLogin },
+            get: { state.launchAtLoginStatus.isEnabled },
             set: { newValue in
                 _ = appDelegate?.setLaunchAtLogin(newValue)
             }

@@ -145,11 +145,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func setLaunchAtLogin(_ enabled: Bool) -> Bool {
         do {
             try launchAtLoginManager.setEnabled(enabled)
-            settings.launchAtLogin = enabled
-            state.updateLaunchAtLogin(enabled)
+            state.updateLaunchAtLoginStatus(launchAtLoginManager.status())
             return true
         } catch {
-            state.updateLaunchAtLogin(settings.launchAtLogin)
+            state.updateLaunchAtLoginStatus(launchAtLoginManager.status())
             state.setError("HanToggle could not update Launch at Login.")
             return false
         }
@@ -265,7 +264,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settings.hasCompletedSetup = true
-        state.updateSetupCompletion(true)
+        state.markSetupCompleted()
         state.updateShowMenuBarItem(settings.showMenuBarItem)
         state.setReady()
         return true
@@ -328,8 +327,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state.updateSettings(
             hotkeyDisplayName: settings.hotkey.displayName,
             showMenuBarItem: settings.showMenuBarItem,
-            launchAtLogin: settings.launchAtLogin,
-            hasCompletedSetup: settings.hasCompletedSetup
+            hasCompletedSetup: settings.hasCompletedSetup,
+            launchAtLoginStatus: launchAtLoginManager.status()
         )
     }
 

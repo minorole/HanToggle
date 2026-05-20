@@ -10,7 +10,6 @@ struct AppSettingsTests {
 
         #expect(settings.hotkey == .default)
         #expect(settings.showMenuBarItem)
-        #expect(!settings.launchAtLogin)
     }
 
     @Test("settings persist through UserDefaults")
@@ -20,13 +19,11 @@ struct AppSettingsTests {
 
         settings.hotkey = GlobalHotkey(keyCode: 17, modifiers: [.command, .shift])
         settings.showMenuBarItem = false
-        settings.launchAtLogin = true
 
         let reloaded = AppSettings(defaults: defaults)
 
         #expect(reloaded.hotkey == GlobalHotkey(keyCode: 17, modifiers: [.command, .shift]))
         #expect(!reloaded.showMenuBarItem)
-        #expect(reloaded.launchAtLogin)
     }
 
     @Test("setup completion defaults to false")

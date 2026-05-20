@@ -16,8 +16,8 @@ final class AppState: ObservableObject {
     @Published private(set) var hasActiveHotkey = false
     @Published private(set) var isTextReplacementServiceReady = false
     @Published private(set) var showMenuBarItem = true
-    @Published private(set) var launchAtLogin = false
     @Published private(set) var hasCompletedSetup = false
+    @Published private(set) var launchAtLoginStatus: LaunchAtLoginStatus = .disabled
     @Published private(set) var currentIssue: AppIssue?
 
     private var lastErrorSource: ErrorSource?
@@ -31,6 +31,13 @@ final class AppState: ObservableObject {
         hasActiveHotkey &&
         isTextReplacementServiceReady &&
         conversionTestStatus == .passed
+    }
+
+    var shouldShowSetupChecklist: Bool {
+        !hasCompletedSetup ||
+        accessibilityStatus != .trusted ||
+        !hasActiveHotkey ||
+        !isTextReplacementServiceReady
     }
 
     var setupStatusTitle: String {
@@ -220,13 +227,13 @@ final class AppState: ObservableObject {
     func updateSettings(
         hotkeyDisplayName: String,
         showMenuBarItem: Bool,
-        launchAtLogin: Bool,
-        hasCompletedSetup: Bool = false
+        hasCompletedSetup: Bool,
+        launchAtLoginStatus: LaunchAtLoginStatus
     ) {
         self.hotkeyDisplayName = hotkeyDisplayName
-        updateShowMenuBarItem(showMenuBarItem)
-        self.launchAtLogin = launchAtLogin
         self.hasCompletedSetup = hasCompletedSetup
+        updateShowMenuBarItem(showMenuBarItem)
+        self.launchAtLoginStatus = launchAtLoginStatus
     }
 
     func updateShowMenuBarItem(_ showMenuBarItem: Bool) {
@@ -246,12 +253,12 @@ final class AppState: ObservableObject {
         self.showMenuBarItem = showMenuBarItem
     }
 
-    func updateLaunchAtLogin(_ launchAtLogin: Bool) {
-        self.launchAtLogin = launchAtLogin
+    func updateLaunchAtLoginStatus(_ status: LaunchAtLoginStatus) {
+        launchAtLoginStatus = status
     }
 
-    func updateSetupCompletion(_ hasCompletedSetup: Bool) {
-        self.hasCompletedSetup = hasCompletedSetup
+    func markSetupCompleted() {
+        hasCompletedSetup = true
     }
 
     enum ErrorSource {

@@ -48,5 +48,9 @@ struct AppDelegateConversionTestTests {
 }
 
 private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
+    func status() -> LaunchAtLoginStatus {
+        .disabled
+    }
+
     func setEnabled(_ enabled: Bool) throws {}
 }

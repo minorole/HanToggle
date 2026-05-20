@@ -6,7 +6,7 @@ import Testing
 @MainActor
 @Suite("AppDelegate launch at login")
 struct AppDelegateLaunchAtLoginTests {
-    @Test("launch at login is persisted only after OS registration succeeds")
+    @Test("launch at login status updates after OS registration succeeds")
     func launchAtLoginPersistsAfterRegistrationSucceeds() {
         let defaults = makeDefaults()
         let settings = AppSettings(defaults: defaults)
@@ -22,12 +22,11 @@ struct AppDelegateLaunchAtLoginTests {
         let didUpdate = appDelegate.setLaunchAtLogin(true)
 
         #expect(didUpdate)
-        #expect(settings.launchAtLogin)
-        #expect(state.launchAtLogin)
+        #expect(state.launchAtLoginStatus == .enabled)
         #expect(manager.requests == [true])
     }
 
-    @Test("launch at login failure keeps previous setting and shows error")
+    @Test("launch at login failure keeps service status and shows error")
     func launchAtLoginFailureKeepsPreviousSettingAndShowsError() {
         let defaults = makeDefaults()
         let settings = AppSettings(defaults: defaults)
@@ -42,8 +41,7 @@ struct AppDelegateLaunchAtLoginTests {
         let didUpdate = appDelegate.setLaunchAtLogin(true)
 
         #expect(!didUpdate)
-        #expect(!settings.launchAtLogin)
-        #expect(!state.launchAtLogin)
+        #expect(state.launchAtLoginStatus == .disabled)
         #expect(state.lastError == "HanToggle could not update Launch at Login.")
         #expect(manager.requests == [true])
     }
@@ -330,10 +328,16 @@ struct AppDelegateLaunchAtLoginTests {
 
 private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
     private let error: (any Error)?
+    private var statusValue: LaunchAtLoginStatus
     private(set) var requests: [Bool] = []
 
-    init(error: (any Error)? = nil) {
+    init(error: (any Error)? = nil, status: LaunchAtLoginStatus = .disabled) {
         self.error = error
+        self.statusValue = status
+    }
+
+    func status() -> LaunchAtLoginStatus {
+        statusValue
     }
 
     func setEnabled(_ enabled: Bool) throws {
@@ -342,6 +346,8 @@ private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {
         if let error {
             throw error
         }
+
+        statusValue = enabled ? .enabled : .disabled
     }
 }
 
