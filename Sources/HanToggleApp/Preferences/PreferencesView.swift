@@ -12,7 +12,7 @@ struct PreferencesView: View {
             hotkeySection
             conversionTestSection
             accessibilitySection
-            menuBarSection
+            visibilitySection
             launchSection
             privacySection
         }
@@ -99,9 +99,10 @@ struct PreferencesView: View {
         }
     }
 
-    private var menuBarSection: some View {
-        Section("Menu Bar") {
+    private var visibilitySection: some View {
+        Section("Visibility") {
             Toggle("Show HanToggle in menu bar", isOn: showMenuBarItemBinding)
+            Toggle("Show HanToggle in Dock", isOn: showDockIconBinding)
 
             if !state.hasActiveHotkey {
                 Text("A working hotkey is required before hiding the menu-bar item.")
@@ -132,6 +133,13 @@ struct PreferencesView: View {
         Binding(
             get: { state.showMenuBarItem },
             set: { actions.setShowMenuBarItem($0) }
+        )
+    }
+
+    private var showDockIconBinding: Binding<Bool> {
+        Binding(
+            get: { state.showDockIcon },
+            set: { actions.setShowDockIcon($0) }
         )
     }
 
