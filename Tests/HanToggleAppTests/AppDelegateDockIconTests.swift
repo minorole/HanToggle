@@ -178,6 +178,35 @@ struct AppDelegateDockIconTests {
         #expect(state.showDockIcon)
         #expect(!settings.showMenuBarItem)
         #expect(!state.showMenuBarItem)
+        #expect(state.lastError == nil)
+    }
+
+    @Test("accessibility recovery restores Dock failure while launch fallback is active")
+    func accessibilityRecoveryRestoresDockFailureWhileLaunchFallbackIsActive() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.hasCompletedSetup = true
+        settings.showDockIcon = true
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let permissionManager = MutableFakeAccessibilityPermissionManager(status: .notTrusted)
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(activeHotkey: .default),
+            permissionManager: permissionManager,
+            activationPolicyManager: FakeActivationPolicyManager(error: ActivationPolicyTestError.failed)
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        #expect(state.lastError == "Enable HanToggle in System Settings > Privacy & Security > Accessibility.")
+
+        permissionManager.status = .trusted
+        appDelegate.applicationDidBecomeActive(Notification(name: NSApplication.didBecomeActiveNotification))
+
+        #expect(!settings.showMenuBarItem)
+        #expect(state.showMenuBarItem)
+        #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
     }
 
     @Test("preference change persists and applies immediately")
@@ -311,6 +340,22 @@ private final class FakeHotkeyManager: HotkeyManaging {
 
 private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
     let status: AccessibilityPermissionStatus
+
+    func status(prompt: Bool) -> AccessibilityPermissionStatus {
+        status
+    }
+
+    func openAccessibilitySettings() -> Bool {
+        true
+    }
+}
+
+private final class MutableFakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
+    var status: AccessibilityPermissionStatus
+
+    init(status: AccessibilityPermissionStatus) {
+        self.status = status
+    }
 
     func status(prompt: Bool) -> AccessibilityPermissionStatus {
         status

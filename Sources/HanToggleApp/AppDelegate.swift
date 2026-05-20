@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let conversionTestServiceFactory: () throws -> ConversionTestService
     private var textReplacementService: TextReplacementService?
     private var requiresMenuBarItemForDockActivationFailure = false
+    private let dockActivationFailureMessage = "HanToggle could not update Dock icon visibility."
 
     private var effectiveShowMenuBarItem: Bool {
         settings.showMenuBarItem || requiresMenuBarItemForDockActivationFailure
@@ -111,6 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func refreshAccessibilityState(prompt: Bool) {
         state.updateAccessibility(permissionManager.status(prompt: prompt))
+        restoreDockActivationFailureIfNeeded()
     }
 
     func requestAccessibilityPermission() {
@@ -176,6 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state.updateShowDockIcon(showDockIcon)
         requiresMenuBarItemForDockActivationFailure = false
         state.updateShowMenuBarItem(effectiveShowMenuBarItem)
+        clearDockActivationFailureIfNeeded()
     }
 
     @discardableResult
@@ -187,7 +190,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state.updateShowDockIcon(showDockIcon)
             return true
         } catch {
-            state.setError("HanToggle could not update Dock icon visibility.")
+            state.setError(dockActivationFailureMessage)
             return false
         }
     }
@@ -243,6 +246,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if candidate == settings.hotkey, candidate == hotkeyManager.activeHotkey {
             state.confirmHotkeyActive(candidate.displayName)
+            restoreDockActivationFailureIfNeeded()
             return true
         }
 
@@ -272,6 +276,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         settings.hotkey = candidate
         state.confirmHotkeyActive(candidate.displayName)
+        restoreDockActivationFailureIfNeeded()
         return true
     }
 
@@ -303,6 +308,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         return true
+    }
+
+    private func restoreDockActivationFailureIfNeeded() {
+        guard requiresMenuBarItemForDockActivationFailure,
+              state.accessibilityStatus == .trusted else {
+            return
+        }
+
+        state.updateShowMenuBarItem(true)
+        state.setError(dockActivationFailureMessage)
+    }
+
+    private func clearDockActivationFailureIfNeeded() {
+        guard state.lastError == dockActivationFailureMessage else {
+            return
+        }
+
+        state.setReady()
     }
 
     private func showPreferencesWhenAttentionIsRequired() {
