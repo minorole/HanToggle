@@ -43,6 +43,11 @@ let package = Package(
             exclude: [
                 "Resources/Info.plist",
                 "Resources/HanToggle.entitlements",
+                "Resources/HanToggle.icns",
+                "Resources/HanToggleAppIcon.png",
+            ],
+            resources: [
+                .copy("Resources/MenuBarIconTemplate.png"),
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),

@@ -17,6 +17,8 @@ X86_BINARY="$SWIFTPM_BUILD_DIR/$X86_TRIPLE/release/HanToggleApp"
 INFO_PLIST="$PROJECT_DIR/Sources/HanToggleApp/Resources/Info.plist"
 SOURCE_ENTITLEMENTS="$PROJECT_DIR/Sources/HanToggleApp/Resources/HanToggle.entitlements"
 BUILD_ENTITLEMENTS="$BUILD_DIR/HanToggle.entitlements"
+APP_ICON="$PROJECT_DIR/Sources/HanToggleApp/Resources/HanToggle.icns"
+MENU_BAR_ICON="$PROJECT_DIR/Sources/HanToggleApp/Resources/MenuBarIconTemplate.png"
 DEFAULT_SIGN_IDENTITY="Developer ID Application: Your Name (YOURTEAMID)"
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 
@@ -38,6 +40,8 @@ chmod +x "$APP_BINARY"
 
 cp "$INFO_PLIST" "$CONTENTS_DIR/Info.plist"
 cp "$SOURCE_ENTITLEMENTS" "$BUILD_ENTITLEMENTS"
+cp "$APP_ICON" "$RESOURCES_DIR/HanToggle.icns"
+cp "$MENU_BAR_ICON" "$RESOURCES_DIR/MenuBarIconTemplate.png"
 
 echo "Pruning SwiftPM build output to required resource bundles..."
 PRUNED_RESOURCE_DIR="$BUILD_DIR/swiftpm-resource-bundles"
