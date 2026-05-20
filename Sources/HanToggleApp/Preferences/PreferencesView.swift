@@ -15,6 +15,7 @@ struct PreferencesView: View {
             visibilitySection
             launchSection
             privacySection
+            supportSection
         }
         .formStyle(.grouped)
         .padding(20)
@@ -126,6 +127,17 @@ struct PreferencesView: View {
         Section("Privacy") {
             Text("Conversion happens locally. HanToggle does not log, store, or transmit selected text or clipboard contents.")
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var supportSection: some View {
+        Section("Support") {
+            Text("For feedback, feature requests, or support, email \(SupportContact.emailAddress).")
+                .foregroundStyle(.secondary)
+
+            Button("Email Support") {
+                actions.openSupportEmail()
+            }
         }
     }
 

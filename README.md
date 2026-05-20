@@ -81,6 +81,12 @@ If HanToggle says a shortcut is already in use or reserved by macOS, choose anot
 - **Text is not replaced in one app:** some apps block synthetic copy/paste events. Try TextEdit to confirm HanToggle is working, then report the app that failed.
 - **Clipboard was not changed back:** stop using the app and report the issue. Clipboard preservation failures are release blockers.
 
+## Support
+
+For feedback, feature requests, or support, email hi@minor-role.com.
+
+Do not include private selected text or clipboard contents in support messages.
+
 ## Privacy
 
 HanToggle converts text locally. It does not use analytics, telemetry, update checks, or network conversion.
