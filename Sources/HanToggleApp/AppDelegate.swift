@@ -50,9 +50,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if !applyDockIconVisibility(settings.showDockIcon) {
+        let didFailToApplyDockIconVisibility = !applyDockIconVisibility(settings.showDockIcon)
+
+        if didFailToApplyDockIconVisibility {
             settings.showDockIcon = false
             state.updateShowDockIcon(false)
+        }
+
+        defer {
+            if didFailToApplyDockIconVisibility {
+                state.updateShowMenuBarItem(true)
+            }
         }
 
         hotkeyManager.onHotkey = { [weak self] in

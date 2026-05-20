@@ -71,6 +71,32 @@ struct AppDelegateDockIconTests {
         #expect(activationPolicyManager.appliedPolicies == [.regular])
     }
 
+    @Test("launch failure keeps menu bar visible without overwriting hidden preference")
+    func launchFailureKeepsMenuBarVisibleWithoutOverwritingHiddenPreference() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.hasCompletedSetup = true
+        settings.showDockIcon = true
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let activationPolicyManager = FakeActivationPolicyManager(error: ActivationPolicyTestError.failed)
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(activeHotkey: .default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            activationPolicyManager: activationPolicyManager
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+        #expect(!settings.showMenuBarItem)
+        #expect(state.showMenuBarItem)
+        #expect(!settings.showDockIcon)
+        #expect(!state.showDockIcon)
+        #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
+    }
+
     @Test("preference change persists and applies immediately")
     func preferenceChangePersistsAndAppliesImmediately() {
         let settings = AppSettings(defaults: makeDefaults())
