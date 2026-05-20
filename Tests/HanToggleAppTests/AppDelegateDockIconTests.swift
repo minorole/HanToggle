@@ -47,6 +47,30 @@ struct AppDelegateDockIconTests {
         #expect(state.showDockIcon)
     }
 
+    @Test("launch failure reverts persisted Dock icon setting and reports error")
+    func launchFailureRevertsPersistedDockIconSettingAndReportsError() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.hasCompletedSetup = true
+        settings.showDockIcon = true
+        let state = AppState()
+        let activationPolicyManager = FakeActivationPolicyManager(error: ActivationPolicyTestError.failed)
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(activeHotkey: .default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            activationPolicyManager: activationPolicyManager
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+        #expect(!settings.showDockIcon)
+        #expect(!state.showDockIcon)
+        #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
+        #expect(activationPolicyManager.appliedPolicies == [.regular])
+    }
+
     @Test("preference change persists and applies immediately")
     func preferenceChangePersistsAndAppliesImmediately() {
         let settings = AppSettings(defaults: makeDefaults())
@@ -84,6 +108,28 @@ struct AppDelegateDockIconTests {
         #expect(!state.showDockIcon)
         #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
         #expect(activationPolicyManager.appliedPolicies == [.regular])
+    }
+
+    @Test("activation policy failure while hiding Dock icon preserves previous visible state")
+    func activationPolicyFailureWhileHidingDockIconPreservesPreviousVisibleState() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.showDockIcon = true
+        let state = AppState()
+        state.updateShowDockIcon(true)
+        let activationPolicyManager = FakeActivationPolicyManager(error: ActivationPolicyTestError.failed)
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            activationPolicyManager: activationPolicyManager
+        )
+
+        appDelegate.setShowDockIcon(false)
+
+        #expect(settings.showDockIcon)
+        #expect(state.showDockIcon)
+        #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
+        #expect(activationPolicyManager.appliedPolicies == [.accessory])
     }
 
     private func makeDefaults() -> UserDefaults {

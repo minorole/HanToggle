@@ -50,7 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        applyDockIconVisibility(settings.showDockIcon)
+        if !applyDockIconVisibility(settings.showDockIcon) {
+            settings.showDockIcon = false
+            state.updateShowDockIcon(false)
+        }
 
         hotkeyManager.onHotkey = { [weak self] in
             self?.toggleSelection()
