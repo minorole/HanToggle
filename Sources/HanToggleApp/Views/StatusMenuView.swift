@@ -3,6 +3,7 @@ import SwiftUI
 
 struct StatusMenuView: View {
     @EnvironmentObject private var state: AppState
+    @Environment(\.hanToggleActions) private var actions
 
     var body: some View {
         if state.showMenuBarItem {
@@ -35,18 +36,12 @@ struct StatusMenuView: View {
 
         Divider()
 
-        Button("Settings") {
-            appDelegate?.showSettingsWindow()
-        }
-
-        if !state.canCompleteSetup {
-            Button("Setup HanToggle") {
-                appDelegate?.showSetupWindow()
-            }
+        Button(state.shouldShowSetupChecklist ? "Set Up HanToggle" : "Preferences") {
+            actions.showPreferencesWindow()
         }
 
         Button("Quit") {
-            NSApp.terminate(nil)
+            actions.quit()
         }
     }
 
@@ -55,19 +50,19 @@ struct StatusMenuView: View {
         switch action {
         case .openAccessibilitySettings:
             Button("Open Accessibility Settings") {
-                appDelegate?.openAccessibilitySettings()
+                actions.openAccessibilitySettings()
             }
         case .openSettings:
             Button("Open Settings") {
-                appDelegate?.showSettingsWindow()
+                actions.showPreferencesWindow()
             }
         case .openSetup:
             Button("Setup HanToggle") {
-                appDelegate?.showSetupWindow()
+                actions.showPreferencesWindow()
             }
         case .changeShortcut:
             Button("Change Shortcut") {
-                appDelegate?.showSettingsWindow()
+                actions.showPreferencesWindow()
             }
         }
     }
@@ -76,7 +71,4 @@ struct StatusMenuView: View {
         state.lastError == nil ? "checkmark.circle" : "exclamationmark.triangle"
     }
 
-    private var appDelegate: AppDelegate? {
-        AppDelegate.shared ?? (NSApp.delegate as? AppDelegate)
-    }
 }

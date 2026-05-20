@@ -9,8 +9,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkeyManager: any HotkeyManaging
     private let permissionManager: any AccessibilityPermissionChecking
     private let launchAtLoginManager: any LaunchAtLoginManaging
-    private let settingsWindowPresenter: any SettingsWindowPresenting
-    private let setupWindowPresenter: any SetupWindowPresenting
     private let preferencesWindowPresenter: any PreferencesWindowPresenting
     private let conversionTestServiceFactory: () throws -> ConversionTestService
     private var textReplacementService: TextReplacementService?
@@ -21,8 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.hotkeyManager = HotkeyManager()
         self.permissionManager = AccessibilityPermissionManager()
         self.state = .shared
-        self.settingsWindowPresenter = AppKitSettingsWindowPresenter(state: self.state)
-        self.setupWindowPresenter = AppKitSetupWindowPresenter(state: self.state)
         self.preferencesWindowPresenter = AppKitPreferencesWindowPresenter(state: self.state)
         self.conversionTestServiceFactory = { try ConversionTestService() }
         super.init()
@@ -36,8 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager: any HotkeyManaging = HotkeyManager(),
         permissionManager: any AccessibilityPermissionChecking = AccessibilityPermissionManager(),
         conversionTestServiceFactory: @escaping () throws -> ConversionTestService = { try ConversionTestService() },
-        settingsWindowPresenter: (any SettingsWindowPresenting)? = nil,
-        setupWindowPresenter: (any SetupWindowPresenting)? = nil,
         preferencesWindowPresenter: (any PreferencesWindowPresenting)? = nil
     ) {
         self.settings = settings
@@ -46,8 +40,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.permissionManager = permissionManager
         self.conversionTestServiceFactory = conversionTestServiceFactory
         self.state = state
-        self.settingsWindowPresenter = settingsWindowPresenter ?? AppKitSettingsWindowPresenter(state: state)
-        self.setupWindowPresenter = setupWindowPresenter ?? AppKitSetupWindowPresenter(state: state)
         self.preferencesWindowPresenter = preferencesWindowPresenter ?? AppKitPreferencesWindowPresenter(state: state)
         super.init()
         Self.shared = self
@@ -65,15 +57,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             textReplacementService = try TextReplacementService(permissionManager: permissionManager)
             state.setTextReplacementServiceReady(true)
             applySettings()
-            reconcileSetupPresentation()
-            showSettingsWhenMenuBarItemIsHidden()
+            showPreferencesWhenAttentionIsRequired()
         } catch let error as TextReplacementError {
             state.setTextReplacementServiceReady(false)
-            reconcileSetupPresentation()
+            applySettings()
+            showPreferencesWhenAttentionIsRequired()
             state.setIssue(AppIssue(textReplacementError: error))
         } catch {
             state.setTextReplacementServiceReady(false)
-            reconcileSetupPresentation()
+            applySettings()
+            showPreferencesWhenAttentionIsRequired()
             state.setIssue(AppIssue(textReplacementError: .converterInitializationFailed))
         }
     }
@@ -84,7 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         refreshAccessibilityState(prompt: false)
-        reconcileSetupPresentation(refreshState: false)
+        refreshLaunchAtLoginState()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -117,38 +110,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startHotkey()
     }
 
-    func showSettingsWindow() {
-        settingsWindowPresenter.showSettingsWindow()
-    }
-
-    func showSetupWindow() {
-        setupWindowPresenter.showSetupWindow()
-    }
-
     func showPreferencesWindow() {
         refreshSettingsState()
         refreshAccessibilityState(prompt: false)
-        preferencesWindowPresenter.showPreferencesWindow(actions: makePreferencesActions())
+        preferencesWindowPresenter.showPreferencesWindow(actions: actions)
     }
 
     func showPrimaryWindow() {
-        refreshSettingsState()
-        refreshAccessibilityState(prompt: false)
-
-        if shouldShowSetup {
-            state.updateShowMenuBarItem(true)
-        }
-
-        preferencesWindowPresenter.showPreferencesWindow(actions: makePreferencesActions())
+        showPreferencesWindow()
     }
 
     func setLaunchAtLogin(_ enabled: Bool) -> Bool {
         do {
             try launchAtLoginManager.setEnabled(enabled)
-            state.updateLaunchAtLoginStatus(launchAtLoginManager.status())
+            refreshLaunchAtLoginState()
             return true
         } catch {
-            state.updateLaunchAtLoginStatus(launchAtLoginManager.status())
+            refreshLaunchAtLoginState()
             state.setError("HanToggle could not update Launch at Login.")
             return false
         }
@@ -259,7 +237,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     state.setError(state.setupPrimaryMessage)
                 }
             }
-            preferencesWindowPresenter.showPreferencesWindow(actions: makePreferencesActions())
+            showPreferencesWindow()
             return false
         }
 
@@ -270,30 +248,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
-    func reconcileSetupPresentation() {
-        reconcileSetupPresentation(refreshState: true)
-    }
-
-    private func reconcileSetupPresentation(refreshState: Bool) {
-        if refreshState {
-            refreshSettingsState()
-            refreshAccessibilityState(prompt: false)
-        }
-
-        guard shouldShowSetup else {
+    private func showPreferencesWhenAttentionIsRequired() {
+        guard state.shouldShowSetupChecklist else {
             return
         }
 
         state.updateShowMenuBarItem(true)
-        preferencesWindowPresenter.showPreferencesWindow(actions: makePreferencesActions())
-    }
-
-    private func showSettingsWhenMenuBarItemIsHidden() {
-        guard !shouldShowSetup, !settings.showMenuBarItem else {
-            return
-        }
-
-        preferencesWindowPresenter.showPreferencesWindow(actions: makePreferencesActions())
+        preferencesWindowPresenter.showPreferencesWindow(actions: actions)
     }
 
     private func startHotkey() {
@@ -332,7 +293,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func makePreferencesActions() -> HanToggleActions {
+    private func refreshLaunchAtLoginState() {
+        state.updateLaunchAtLoginStatus(launchAtLoginManager.status())
+    }
+
+    var actionsForViews: HanToggleActions {
+        actions
+    }
+
+    private var actions: HanToggleActions {
         HanToggleActions(
             showPreferencesWindow: { [weak self] in
                 self?.showPreferencesWindow()
@@ -362,11 +331,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApplication.shared.terminate(nil)
             }
         )
-    }
-
-    private var shouldShowSetup: Bool {
-        !settings.hasCompletedSetup ||
-        state.accessibilityStatus != .trusted ||
-        !state.hasActiveHotkey
     }
 }

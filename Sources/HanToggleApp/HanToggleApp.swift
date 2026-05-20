@@ -13,6 +13,7 @@ struct HanToggleApp: App {
         )) {
             StatusMenuView()
                 .environmentObject(state)
+                .environment(\.hanToggleActions, appDelegateAdaptor.actionsForViews)
         } label: {
             Label("HanToggle", systemImage: state.menuBarSystemImageName)
         }
