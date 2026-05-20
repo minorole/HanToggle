@@ -62,6 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state.setTextReplacementServiceReady(true)
             applySettings()
             reconcileSetupPresentation()
+            showSettingsWhenMenuBarItemIsHidden()
         } catch let error as TextReplacementError {
             state.setTextReplacementServiceReady(false)
             reconcileSetupPresentation()
@@ -80,6 +81,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         refreshAccessibilityState(prompt: false)
         reconcileSetupPresentation(refreshState: false)
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showPrimaryWindow()
+        return false
     }
 
     func refreshAccessibilityState(prompt: Bool) {
@@ -113,6 +119,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func showSetupWindow() {
         setupWindowPresenter.showSetupWindow()
+    }
+
+    func showPrimaryWindow() {
+        refreshSettingsState()
+        refreshAccessibilityState(prompt: false)
+
+        if shouldShowSetup {
+            state.updateShowMenuBarItem(true)
+            setupWindowPresenter.showSetupWindow()
+        } else {
+            settingsWindowPresenter.showSettingsWindow()
+        }
     }
 
     func setLaunchAtLogin(_ enabled: Bool) -> Bool {
@@ -253,6 +271,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         state.updateShowMenuBarItem(true)
         setupWindowPresenter.showSetupWindow()
+    }
+
+    private func showSettingsWhenMenuBarItemIsHidden() {
+        guard !shouldShowSetup, !settings.showMenuBarItem else {
+            return
+        }
+
+        settingsWindowPresenter.showSettingsWindow()
     }
 
     private func startHotkey() {

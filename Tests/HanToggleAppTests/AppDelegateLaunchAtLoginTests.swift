@@ -142,6 +142,54 @@ struct AppDelegateLaunchAtLoginTests {
         #expect(setupPresenter.showSetupWindowCalls == 0)
     }
 
+    @Test("launch shows settings when completed app has hidden menu bar")
+    func launchShowsSettingsWhenMenuBarIsHidden() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        settings.hasCompletedSetup = true
+        settings.showMenuBarItem = false
+        let settingsPresenter = FakeSettingsWindowPresenter()
+        let setupPresenter = FakeSetupWindowPresenter()
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState(),
+            hotkeyManager: FakeHotkeyManager(activeHotkey: GlobalHotkey.default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            settingsWindowPresenter: settingsPresenter,
+            setupWindowPresenter: setupPresenter
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+        #expect(settingsPresenter.showSettingsWindowCalls == 1)
+        #expect(setupPresenter.showSetupWindowCalls == 0)
+    }
+
+    @Test("reopening app shows primary window")
+    func reopeningAppShowsPrimaryWindow() {
+        let defaults = makeDefaults()
+        let settings = AppSettings(defaults: defaults)
+        settings.hasCompletedSetup = true
+        let settingsPresenter = FakeSettingsWindowPresenter()
+
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState(),
+            hotkeyManager: FakeHotkeyManager(activeHotkey: GlobalHotkey.default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            settingsWindowPresenter: settingsPresenter
+        )
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+        let shouldHandle = appDelegate.applicationShouldHandleReopen(NSApplication.shared, hasVisibleWindows: false)
+
+        #expect(!shouldHandle)
+        #expect(settingsPresenter.showSettingsWindowCalls == 1)
+    }
+
     @Test("setup completion persists only when app is ready")
     func setupCompletionPersistsOnlyWhenReady() {
         let settings = AppSettings(defaults: makeDefaults())

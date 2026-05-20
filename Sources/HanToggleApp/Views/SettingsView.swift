@@ -16,7 +16,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding(20)
-        .frame(width: 540)
     }
 
     private var hotkeySection: some View {

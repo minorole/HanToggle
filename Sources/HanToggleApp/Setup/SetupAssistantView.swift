@@ -18,7 +18,6 @@ struct SetupAssistantView: View {
             footer
         }
         .padding(24)
-        .frame(width: 580)
     }
 
     private var header: some View {
