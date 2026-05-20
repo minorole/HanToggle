@@ -1,0 +1,116 @@
+# HanToggle 0.1.0 Manual QA
+
+Date: 2026-05-20
+Tester: Project owner and automated verification
+Build: local signed universal app bundle
+macOS version: Verified on local release test machine
+Machine architecture: Apple Silicon
+
+## Automated Verification
+
+- [x] `swift test`
+- [x] `swift build --product HanToggleApp`
+- [x] `swift run hantoggle "这句话是简体中文。"`
+- [x] `swift run hantoggle "這句話是簡體中文。"`
+- [x] `Scripts/build-app.sh`
+- [x] `lipo -info build/HanToggle.app/Contents/MacOS/HanToggle` shows `arm64` and `x86_64`
+
+## Native App Verification
+
+- [x] TextEdit: Simplified text converts to Traditional.
+- [x] TextEdit: pressing the hotkey again converts back.
+- [x] TextEdit: Traditional text converts to Simplified.
+- [ ] TextEdit: no selected text shows clear failure and clipboard is preserved.
+- [ ] TextEdit: non-Chinese selected text shows clear failure and clipboard is preserved.
+
+Status: Core TextEdit conversion workflow passed by project owner on 2026-05-20 with made-up sample text only.
+
+## Common Non-Native App Verification
+
+Apps tested: Chrome, VS Code
+
+- [x] Chrome: selected Simplified text converts to Traditional.
+- [x] Chrome: pressing the hotkey again converts back.
+- [x] Chrome: clipboard is preserved after success.
+- [x] VS Code: selected Simplified text converts to Traditional.
+- [x] VS Code: pressing the hotkey again converts back.
+- [x] VS Code: clipboard is preserved after success.
+
+Status: Core non-native app workflow passed by project owner on 2026-05-20 with made-up sample text only.
+
+## First-Run Setup QA
+
+- [ ] Delete the local HanToggle setup completion preference.
+- [ ] Launch `/Applications/HanToggle.app`.
+- [ ] Confirm the setup window appears on first launch.
+- [ ] Confirm the setup window explains menu-bar behavior (including the menu-bar icon opens Settings and Quit) and the default hotkey.
+- [ ] Click **Open Accessibility Settings**.
+- [ ] Confirm System Settings opens or the fallback guidance text is visible in the setup window.
+- [ ] Enable Accessibility permission for HanToggle.
+- [ ] Return to HanToggle and confirm permission status updates.
+- [ ] Confirm setup completion is blocked until Accessibility permission is usable and the hotkey is active.
+- [ ] Confirm **Settings** opens and closes normally.
+- [ ] Confirm the app idles at low CPU after setup.
+- [ ] Confirm conversion works in TextEdit after setup.
+
+## Permission Verification
+
+- [ ] With Accessibility permission removed, HanToggle shows Accessibility Required.
+- [ ] Open Accessibility Settings opens System Settings to Privacy & Security > Accessibility as closely as macOS allows.
+- [ ] With Accessibility permission missing, hotkey does not mutate clipboard.
+- [ ] After granting permission, hotkey works.
+
+Status: Not run manually. Automated tests cover state guidance and no clipboard mutation before permission, but release still needs interactive permission QA.
+
+## Hotkey Verification
+
+- [ ] Changing to a valid unused shortcut saves and activates it.
+- [ ] Invalid shortcut is rejected inline.
+- [ ] Conflict or registration failure keeps previous working shortcut active.
+- [ ] Reset to default validates, registers, and saves.
+
+Status: Not run manually. Automated tests cover validation, failed registration, persistence-after-activation, and previous-hotkey preservation.
+
+## Menu Bar And Launch Verification
+
+- [ ] Menu-bar item is visible by default.
+- [ ] Menu-bar item can be hidden only when a working hotkey exists.
+- [ ] If hotkey registration fails on launch, menu-bar item becomes visible and shows the error.
+- [ ] Launch at login toggle does not crash.
+- [ ] If macOS rejects launch-at-login from the local build, HanToggle shows a clear error.
+
+Status: Not run manually. Automated tests cover menu-bar safety, hidden preference restoration, hotkey failure visibility, and launch-at-login error handling.
+
+## Release Blockers
+
+Stop release for any checked item:
+
+- [ ] Clipboard data loss.
+- [ ] Selected text, converted text, or clipboard contents logged, persisted, or transmitted.
+- [ ] Silent hotkey failure.
+- [ ] App cannot recover from a bad hotkey.
+- [ ] App cannot guide user to Accessibility permission.
+- [ ] Universal build, signing, notarization, stapling, or Gatekeeper verification fails.
+- [ ] Third-party notices incomplete.
+
+## Notes
+
+Record failures with fake or redacted sample text, the affected app, and whether clipboard contents changed. Do not paste private clipboard contents into this file.
+
+Automated verification passed:
+
+- `swift test`: passed.
+- `swift build --product HanToggleApp`: passed.
+- CLI Simplified to Traditional output: `這句話是簡體中文。`
+- CLI Traditional to Simplified output: `这句话是简体中文。`
+- `Scripts/build-app.sh`: passed.
+- `lipo -info build/HanToggle.app/Contents/MacOS/HanToggle`: `x86_64 arm64`.
+- `bash -n Scripts/build-app.sh Scripts/check-notarization.sh Scripts/release.sh`: passed.
+
+Release environment checks:
+
+- Required commands present: `swift`, `lipo`, `codesign`, `xcrun`, `hdiutil`, `spctl`, `security`, `gh`.
+- Signing identity is supplied by the local release environment and is not recorded in this public QA file.
+- Notary profile `notarization-profile` was usable in the latest local check.
+
+Release decision: ready for public 0.1.0 beta after third-party notices are updated and the full notarized DMG release flow passes end to end.
