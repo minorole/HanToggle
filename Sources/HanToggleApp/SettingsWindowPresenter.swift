@@ -32,8 +32,8 @@ final class AppKitSettingsWindowPresenter: SettingsWindowPresenting {
         settingsWindow.title = "HanToggle Settings"
         settingsWindow.styleMask = [.titled, .closable, .miniaturizable]
         settingsWindow.isReleasedWhenClosed = false
-        settingsWindow.setContentSize(NSSize(width: 520, height: 460))
-        settingsWindow.contentMinSize = NSSize(width: 520, height: 360)
+        settingsWindow.setContentSize(NSSize(width: 540, height: 560))
+        settingsWindow.contentMinSize = NSSize(width: 520, height: 440)
         settingsWindow.center()
 
         return settingsWindow

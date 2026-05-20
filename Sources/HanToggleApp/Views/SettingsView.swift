@@ -8,6 +8,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             hotkeySection
+            testConversionSection
             permissionSection
             menuBarSection
             launchSection
@@ -15,58 +16,32 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding(20)
-        .frame(width: 520)
+        .frame(width: 540)
     }
 
     private var hotkeySection: some View {
         Section("Hotkey") {
-            HStack {
-                Text("Shortcut")
-
-                Spacer()
-
-                if isRecordingHotkey {
-                    HotkeyRecorderView(
-                        onHotkeyCaptured: { hotkey in
-                            if appDelegate?.setHotkey(hotkey) == true {
-                                isRecordingHotkey = false
-                            }
-                        },
-                        onCancel: {
-                            isRecordingHotkey = false
-                            state.setHotkeyRecordingError(nil)
-                        }
-                    )
-                    .frame(width: 1, height: 1)
-
-                    Text("Press new shortcut...")
-                        .foregroundStyle(.secondary)
-
-                    Button("Cancel") {
-                        isRecordingHotkey = false
-                        state.setHotkeyRecordingError(nil)
-                    }
-
-                    Button("Reset") {
-                        if appDelegate?.resetHotkeyToDefault() == true {
-                            isRecordingHotkey = false
-                        }
-                        state.setHotkeyRecordingError(nil)
-                    }
-                } else {
-                    Text(state.hotkeyDisplayName)
-                        .foregroundStyle(.secondary)
-
-                    Button("Change...") {
-                        isRecordingHotkey = true
-                        state.setHotkeyRecordingError(nil)
-                    }
+            ShortcutRecorderControl(
+                displayName: state.hotkeyDisplayName,
+                errorMessage: state.hotkeyRecordingError,
+                isRecording: $isRecordingHotkey,
+                onHotkeyCaptured: { hotkey in
+                    appDelegate?.setHotkey(hotkey) == true
+                },
+                onCancel: {
+                    state.setHotkeyRecordingError(nil)
+                },
+                onReset: {
+                    appDelegate?.resetHotkeyToDefault() == true
                 }
-            }
+            )
+        }
+    }
 
-            if let hotkeyRecordingError = state.hotkeyRecordingError {
-                Text(hotkeyRecordingError)
-                    .foregroundStyle(.red)
+    private var testConversionSection: some View {
+        Section("Test Conversion") {
+            ConversionTestView(status: state.conversionTestStatus) {
+                appDelegate?.runConversionTest()
             }
         }
     }
