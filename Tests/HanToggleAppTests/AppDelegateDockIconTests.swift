@@ -97,6 +97,89 @@ struct AppDelegateDockIconTests {
         #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
     }
 
+    @Test("launch failure keeps menu bar visible after preferences refresh")
+    func launchFailureKeepsMenuBarVisibleAfterPreferencesRefresh() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.hasCompletedSetup = true
+        settings.showDockIcon = true
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let presenter = FakePreferencesWindowPresenter()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(activeHotkey: .default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            activationPolicyManager: FakeActivationPolicyManager(error: ActivationPolicyTestError.failed),
+            preferencesWindowPresenter: presenter
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        appDelegate.showPreferencesWindow()
+
+        #expect(!settings.showMenuBarItem)
+        #expect(state.showMenuBarItem)
+        #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
+        #expect(presenter.showCalls == 1)
+    }
+
+    @Test("launch failure keeps menu bar visible and error after setup completion")
+    func launchFailureKeepsMenuBarVisibleAndErrorAfterSetupCompletion() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.hasCompletedSetup = false
+        settings.showDockIcon = true
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(activeHotkey: .default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            activationPolicyManager: FakeActivationPolicyManager(error: ActivationPolicyTestError.failed)
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        state.updateConversionTestStatus(.passed)
+
+        let didComplete = appDelegate.completeSetup()
+
+        #expect(didComplete)
+        #expect(settings.hasCompletedSetup)
+        #expect(!settings.showMenuBarItem)
+        #expect(state.showMenuBarItem)
+        #expect(state.lastError == "HanToggle could not update Dock icon visibility.")
+    }
+
+    @Test("successful Dock icon change clears launch fallback")
+    func successfulDockIconChangeClearsLaunchFallback() {
+        let settings = AppSettings(defaults: makeDefaults())
+        settings.hasCompletedSetup = true
+        settings.showDockIcon = true
+        settings.showMenuBarItem = false
+        let state = AppState()
+        let activationPolicyManager = FakeActivationPolicyManager(error: ActivationPolicyTestError.failed)
+        let appDelegate = AppDelegate(
+            settings: settings,
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: state,
+            hotkeyManager: FakeHotkeyManager(activeHotkey: .default),
+            permissionManager: FakeAccessibilityPermissionManager(status: .trusted),
+            activationPolicyManager: activationPolicyManager
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+        activationPolicyManager.error = nil
+
+        appDelegate.setShowDockIcon(true)
+
+        #expect(settings.showDockIcon)
+        #expect(state.showDockIcon)
+        #expect(!settings.showMenuBarItem)
+        #expect(!state.showMenuBarItem)
+    }
+
     @Test("preference change persists and applies immediately")
     func preferenceChangePersistsAndAppliesImmediately() {
         let settings = AppSettings(defaults: makeDefaults())
@@ -167,7 +250,7 @@ struct AppDelegateDockIconTests {
 }
 
 private final class FakeActivationPolicyManager: ApplicationActivationPolicyManaging {
-    private let error: (any Error)?
+    var error: (any Error)?
     private(set) var appliedPolicies: [HanToggleActivationPolicy] = []
 
     init(error: (any Error)? = nil) {
@@ -185,6 +268,20 @@ private final class FakeActivationPolicyManager: ApplicationActivationPolicyMana
 
 private enum ActivationPolicyTestError: Error {
     case failed
+}
+
+@MainActor
+private final class FakePreferencesWindowPresenter: PreferencesWindowPresenting {
+    private(set) var showCalls = 0
+    private(set) var closeCalls = 0
+
+    func showPreferencesWindow(actions: HanToggleActions) {
+        showCalls += 1
+    }
+
+    func closePreferencesWindow() {
+        closeCalls += 1
+    }
 }
 
 private final class FakeLaunchAtLoginManager: LaunchAtLoginManaging {

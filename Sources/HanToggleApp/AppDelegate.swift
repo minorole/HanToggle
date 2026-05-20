@@ -13,6 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let preferencesWindowPresenter: any PreferencesWindowPresenting
     private let conversionTestServiceFactory: () throws -> ConversionTestService
     private var textReplacementService: TextReplacementService?
+    private var requiresMenuBarItemForDockActivationFailure = false
+
+    private var effectiveShowMenuBarItem: Bool {
+        settings.showMenuBarItem || requiresMenuBarItemForDockActivationFailure
+    }
 
     override init() {
         self.settings = AppSettings()
@@ -50,16 +55,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let didFailToApplyDockIconVisibility = !applyDockIconVisibility(settings.showDockIcon)
+        let requestedShowDockIcon = settings.showDockIcon
+        let didFailToApplyDockIconVisibility = !applyDockIconVisibility(requestedShowDockIcon)
 
         if didFailToApplyDockIconVisibility {
             settings.showDockIcon = false
             state.updateShowDockIcon(false)
+
+            if requestedShowDockIcon {
+                requiresMenuBarItemForDockActivationFailure = true
+            }
         }
 
         defer {
-            if didFailToApplyDockIconVisibility {
-                state.updateShowMenuBarItem(true)
+            if requiresMenuBarItemForDockActivationFailure {
+                state.updateShowMenuBarItem(effectiveShowMenuBarItem)
             }
         }
 
@@ -149,7 +159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func setShowMenuBarItem(_ showMenuBarItem: Bool) {
         let allowedValue = showMenuBarItem || !state.hasActiveHotkey
         settings.showMenuBarItem = allowedValue
-        state.updateShowMenuBarItem(allowedValue)
+        state.updateShowMenuBarItem(effectiveShowMenuBarItem)
         applySettings()
     }
 
@@ -164,6 +174,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         settings.showDockIcon = showDockIcon
         state.updateShowDockIcon(showDockIcon)
+        requiresMenuBarItemForDockActivationFailure = false
+        state.updateShowMenuBarItem(effectiveShowMenuBarItem)
     }
 
     @discardableResult
@@ -284,8 +296,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         settings.hasCompletedSetup = true
         state.markSetupCompleted()
-        state.updateShowMenuBarItem(settings.showMenuBarItem)
-        state.setReady()
+        state.updateShowMenuBarItem(effectiveShowMenuBarItem)
+
+        if !requiresMenuBarItemForDockActivationFailure {
+            state.setReady()
+        }
+
         return true
     }
 
@@ -317,7 +333,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             try hotkeyManager.start(hotkey: hotkey)
-            state.updateShowMenuBarItem(settings.showMenuBarItem)
+            state.updateShowMenuBarItem(effectiveShowMenuBarItem)
         } catch {
             state.markHotkeyInactive(error.localizedDescription)
             state.setIssue(.hotkeyConflict(error.localizedDescription))
@@ -328,7 +344,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshSettingsState() {
         state.updateSettings(
             hotkeyDisplayName: settings.hotkey.displayName,
-            showMenuBarItem: settings.showMenuBarItem,
+            showMenuBarItem: effectiveShowMenuBarItem,
             showDockIcon: settings.showDockIcon,
             hasCompletedSetup: settings.hasCompletedSetup,
             launchAtLoginStatus: launchAtLoginManager.status()
