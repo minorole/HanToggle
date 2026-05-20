@@ -17,6 +17,7 @@ final class AppState: ObservableObject {
     @Published private(set) var isTextReplacementServiceReady = false
     @Published private(set) var showMenuBarItem = true
     @Published private(set) var launchAtLogin = false
+    @Published private(set) var hasCompletedSetup = false
     @Published private(set) var currentIssue: AppIssue?
 
     private var lastErrorSource: ErrorSource?
@@ -216,10 +217,16 @@ final class AppState: ObservableObject {
         isTextReplacementServiceReady = isReady
     }
 
-    func updateSettings(hotkeyDisplayName: String, showMenuBarItem: Bool, launchAtLogin: Bool) {
+    func updateSettings(
+        hotkeyDisplayName: String,
+        showMenuBarItem: Bool,
+        launchAtLogin: Bool,
+        hasCompletedSetup: Bool = false
+    ) {
         self.hotkeyDisplayName = hotkeyDisplayName
         updateShowMenuBarItem(showMenuBarItem)
         self.launchAtLogin = launchAtLogin
+        self.hasCompletedSetup = hasCompletedSetup
     }
 
     func updateShowMenuBarItem(_ showMenuBarItem: Bool) {
@@ -241,6 +248,10 @@ final class AppState: ObservableObject {
 
     func updateLaunchAtLogin(_ launchAtLogin: Bool) {
         self.launchAtLogin = launchAtLogin
+    }
+
+    func updateSetupCompletion(_ hasCompletedSetup: Bool) {
+        self.hasCompletedSetup = hasCompletedSetup
     }
 
     enum ErrorSource {
