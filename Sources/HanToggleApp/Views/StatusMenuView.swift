@@ -14,17 +14,23 @@ struct StatusMenuView: View {
         Text("Hotkey: \(state.hotkeyDisplayName)")
             .foregroundStyle(.secondary)
 
-        if let lastError = state.lastError {
+        if let issue = state.currentIssue {
+            Divider()
+
+            Text(issue.message)
+
+            if let hint = issue.hint {
+                Text(hint)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(issue.recoveryActions, id: \.self) { action in
+                recoveryButton(for: action)
+            }
+        } else if let lastError = state.lastError {
             Divider()
 
             Text(lastError)
-
-            if state.accessibilityStatus != .trusted {
-                Button("Open Accessibility Settings") {
-                    appDelegate?.openAccessibilitySettings()
-                }
-            }
-
         }
 
         Divider()
@@ -41,6 +47,28 @@ struct StatusMenuView: View {
 
         Button("Quit") {
             NSApp.terminate(nil)
+        }
+    }
+
+    @ViewBuilder
+    private func recoveryButton(for action: RecoveryAction) -> some View {
+        switch action {
+        case .openAccessibilitySettings:
+            Button("Open Accessibility Settings") {
+                appDelegate?.openAccessibilitySettings()
+            }
+        case .openSettings:
+            Button("Open Settings") {
+                appDelegate?.showSettingsWindow()
+            }
+        case .openSetup:
+            Button("Setup HanToggle") {
+                appDelegate?.showSetupWindow()
+            }
+        case .changeShortcut:
+            Button("Change Shortcut") {
+                appDelegate?.showSettingsWindow()
+            }
         }
     }
 
