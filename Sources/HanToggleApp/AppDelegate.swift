@@ -288,6 +288,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state.updateSettings(
             hotkeyDisplayName: settings.hotkey.displayName,
             showMenuBarItem: settings.showMenuBarItem,
+            showDockIcon: settings.showDockIcon,
             hasCompletedSetup: settings.hasCompletedSetup,
             launchAtLoginStatus: launchAtLoginManager.status()
         )

@@ -8,6 +8,7 @@ struct HanToggleActions: Sendable {
     var resetHotkeyToDefault: @MainActor @Sendable () -> Bool = { false }
     var completeSetup: @MainActor @Sendable () -> Bool = { false }
     var setShowMenuBarItem: @MainActor @Sendable (Bool) -> Void = { _ in }
+    var setShowDockIcon: @MainActor @Sendable (Bool) -> Void = { _ in }
     var setLaunchAtLogin: @MainActor @Sendable (Bool) -> Bool = { _ in false }
     var quit: @MainActor @Sendable () -> Void = {}
 

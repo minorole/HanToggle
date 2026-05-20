@@ -236,14 +236,27 @@ struct AppStateTests {
         state.updateSettings(
             hotkeyDisplayName: "Control-Option-H",
             showMenuBarItem: false,
+            showDockIcon: true,
             hasCompletedSetup: true,
             launchAtLoginStatus: .enabled
         )
 
         #expect(state.hotkeyDisplayName == "Control-Option-H")
         #expect(state.showMenuBarItem)
+        #expect(state.showDockIcon)
         #expect(state.hasCompletedSetup)
         #expect(state.launchAtLoginStatus == .enabled)
+    }
+
+    @Test("dock icon visibility can be updated")
+    func updateDockIconVisibility() {
+        let state = AppState()
+
+        #expect(!state.showDockIcon)
+
+        state.updateShowDockIcon(true)
+
+        #expect(state.showDockIcon)
     }
 
     @Test("launch at login status is stored from service state")

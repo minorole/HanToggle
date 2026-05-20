@@ -16,6 +16,7 @@ final class AppState: ObservableObject {
     @Published private(set) var hasActiveHotkey = false
     @Published private(set) var isTextReplacementServiceReady = false
     @Published private(set) var showMenuBarItem = true
+    @Published private(set) var showDockIcon = false
     @Published private(set) var hasCompletedSetup = false
     @Published private(set) var launchAtLoginStatus: LaunchAtLoginStatus = .disabled
     @Published private(set) var currentIssue: AppIssue?
@@ -227,12 +228,14 @@ final class AppState: ObservableObject {
     func updateSettings(
         hotkeyDisplayName: String,
         showMenuBarItem: Bool,
+        showDockIcon: Bool,
         hasCompletedSetup: Bool,
         launchAtLoginStatus: LaunchAtLoginStatus
     ) {
         self.hotkeyDisplayName = hotkeyDisplayName
         self.hasCompletedSetup = hasCompletedSetup
         updateShowMenuBarItem(showMenuBarItem)
+        updateShowDockIcon(showDockIcon)
         self.launchAtLoginStatus = launchAtLoginStatus
     }
 
@@ -251,6 +254,14 @@ final class AppState: ObservableObject {
         }
 
         self.showMenuBarItem = showMenuBarItem
+    }
+
+    func updateShowDockIcon(_ showDockIcon: Bool) {
+        guard self.showDockIcon != showDockIcon else {
+            return
+        }
+
+        self.showDockIcon = showDockIcon
     }
 
     func updateLaunchAtLoginStatus(_ status: LaunchAtLoginStatus) {
