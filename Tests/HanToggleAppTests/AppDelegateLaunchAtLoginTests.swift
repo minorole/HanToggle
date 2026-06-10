@@ -121,6 +121,22 @@ struct AppDelegateLaunchAtLoginTests {
         #expect(state.lastError == "HanToggle could not open Accessibility settings. Open System Settings > Privacy & Security > Accessibility manually.")
     }
 
+    @Test("opening accessibility settings does not request the system prompt")
+    func openingAccessibilitySettingsDoesNotRequestSystemPrompt() {
+        let permissionManager = FakeAccessibilityPermissionManager(status: .notTrusted)
+        let appDelegate = AppDelegate(
+            settings: AppSettings(defaults: makeDefaults()),
+            launchAtLoginManager: FakeLaunchAtLoginManager(),
+            state: AppState(),
+            permissionManager: permissionManager
+        )
+
+        appDelegate.openAccessibilitySettings()
+
+        #expect(permissionManager.statusPrompts == [false, false])
+        #expect(permissionManager.openAccessibilitySettingsCallCount == 1)
+    }
+
     private func makeDefaults() -> UserDefaults {
         let suiteName = "HanToggleAppTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -187,9 +203,11 @@ private final class FakeHotkeyManager: HotkeyManaging {
     func stop() {}
 }
 
-private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
+private final class FakeAccessibilityPermissionManager: AccessibilityPermissionChecking {
     private let statusValue: AccessibilityPermissionStatus
     private let openAccessibilitySettingsResult: Bool
+    private(set) var statusPrompts: [Bool] = []
+    private(set) var openAccessibilitySettingsCallCount = 0
 
     init(
         status: AccessibilityPermissionStatus,
@@ -200,10 +218,12 @@ private struct FakeAccessibilityPermissionManager: AccessibilityPermissionChecki
     }
 
     func status(prompt: Bool) -> AccessibilityPermissionStatus {
-        statusValue
+        statusPrompts.append(prompt)
+        return statusValue
     }
 
     func openAccessibilitySettings() -> Bool {
-        openAccessibilitySettingsResult
+        openAccessibilitySettingsCallCount += 1
+        return openAccessibilitySettingsResult
     }
 }

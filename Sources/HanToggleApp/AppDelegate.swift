@@ -124,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func openAccessibilitySettings() {
-        refreshAccessibilityState(prompt: true)
+        refreshAccessibilityState(prompt: false)
         let didOpenSettings = permissionManager.openAccessibilitySettings()
         refreshAccessibilityState(prompt: false)
 

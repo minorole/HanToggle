@@ -2,7 +2,7 @@
 
 All notable changes to HanToggle will be documented in this file.
 
-## 0.1.0 - 2026-05-19
+## 0.1.0 - 2026-06-09
 
 ### Added
 
@@ -12,6 +12,10 @@ All notable changes to HanToggle will be documented in this file.
 - Clipboard-preserving selected-text replacement flow.
 - Launch-at-login setting.
 - Universal Apple Silicon and Intel release packaging scripts.
+
+### Fixed
+
+- Opening Accessibility Settings no longer also triggers macOS's separate accessibility prompt, avoiding a double-open first-run flow.
 
 ### Privacy
 

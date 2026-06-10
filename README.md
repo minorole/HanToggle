@@ -19,7 +19,11 @@ HanToggle is under active development. The repository currently includes:
 - Global hotkey, status menu, settings, launch-at-login, accessibility permission, pasteboard preservation, and text replacement infrastructure.
 - Local build and release scripts.
 
-Notarized public downloads are not published yet.
+Notarized public downloads are published through GitHub Releases.
+
+## Download
+
+Download the latest notarized DMG from the [GitHub Releases page](https://github.com/minorole/HanToggle/releases). Open the DMG, drag `HanToggle.app` to Applications, then launch HanToggle.
 
 ## Build And Test
 
