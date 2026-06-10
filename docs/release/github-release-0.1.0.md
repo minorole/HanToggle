@@ -54,5 +54,5 @@ This release passed automated tests, manual first-run setup QA, TextEdit convers
 Final artifact SHA-256:
 
 ```text
-TO_BE_FILLED_AFTER_FINAL_BUILD
+b601febff4053b0d1902b919d85757f1599dd557369ec2ab8d6460cb0381023d
 ```

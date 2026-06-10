@@ -112,10 +112,8 @@ No release blockers found.
 ## Artifact
 
 - DMG: `build/HanToggle-0.1.0.dmg`
-- SHA-256 before final clean-tree rebuild: `ca0c8fff941c46842779cd8ccb9e867f938192dfbc13c45f8af90624c860be97`
-
-Final release artifact must be rebuilt from a clean committed tree with `Scripts/release.sh`; record the final SHA-256 in the GitHub release notes.
+- Final SHA-256: `b601febff4053b0d1902b919d85757f1599dd557369ec2ab8d6460cb0381023d`
 
 ## Release Decision
 
-Ready for public 0.1.0 direct-download release after the final clean-tree release build passes and the GitHub release is published with privacy and support information.
+Ready for public 0.1.0 direct-download release. The final clean-tree release build passed and the GitHub release notes include privacy and support information.
