@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HanToggle - Chinese script conversion for macOS</title>
+    <meta
+      name="description"
+      content="HanToggle is a lightweight macOS menu-bar utility for toggling selected Chinese text between Simplified and Traditional with a global hotkey."
+    >
+    <meta name="theme-color" content="#f8faf7">
+    <meta property="og:title" content="HanToggle">
+    <meta
+      property="og:description"
+      content="Select Chinese text in most Mac apps. Press one hotkey. Convert between Simplified and Traditional locally."
+    >
+    <meta property="og:type" content="website">
+    <link rel="icon" href="assets/hantoggle-app-icon.png">
+    <link rel="apple-touch-icon" href="assets/hantoggle-app-icon.png">
+    <link rel="stylesheet" href="assets/site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="HanToggle home">
+        <img src="assets/hantoggle-app-icon.png" alt="" width="40" height="40">
+        <span>HanToggle</span>
+      </a>
+      <nav class="nav-links" aria-label="Site links">
+        <a href="#setup">Setup</a>
+        <a href="#privacy">Privacy</a>
+        <a href="https://github.com/minorole/HanToggle/releases">Download</a>
+        <a href="https://github.com/minorole/HanToggle">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Native macOS menu-bar utility</p>
+          <h1 id="hero-title">HanToggle</h1>
+          <p class="lede">Chinese script conversion, wherever you type.</p>
+          <p class="hero-text">
+            Select Chinese text in most Mac apps. Press your shortcut. HanToggle swaps
+            Simplified and Traditional locally.
+          </p>
+          <div class="actions" aria-label="Primary actions">
+            <a class="button button-primary" href="https://github.com/minorole/HanToggle/releases">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v2h14v-2"></path>
+                </svg>
+              </span>
+              Download latest DMG
+            </a>
+            <a class="button button-secondary" href="https://github.com/minorole/HanToggle">
+              View source
+            </a>
+          </div>
+        </div>
+
+        <div class="workflow-stage" aria-label="HanToggle workflow preview">
+          <div class="mac-menu-bar" aria-hidden="true">
+            <span class="apple-dot"></span>
+            <span class="menu-spacer"></span>
+            <span class="menu-icon app-glyph">漢</span>
+            <span class="menu-icon"></span>
+            <span class="menu-icon small"></span>
+            <span class="menu-time">Wed 9:41 AM</span>
+          </div>
+
+          <div class="editor-window">
+            <div class="window-chrome" aria-hidden="true">
+              <span class="traffic red"></span>
+              <span class="traffic yellow"></span>
+              <span class="traffic green"></span>
+              <span class="window-title">Notes</span>
+            </div>
+            <div class="toolbar" aria-hidden="true">
+              <span>Text</span>
+              <span>Regular</span>
+              <span>18</span>
+              <span class="toolbar-pill">B</span>
+              <span class="toolbar-pill">I</span>
+              <span class="toolbar-pill">Align</span>
+            </div>
+            <div class="document">
+              <p class="selected-text"><span>这句话是简体中文。</span></p>
+              <div class="conversion-popover" role="img" aria-label="Converted to Traditional Chinese">
+                <img src="assets/hantoggle-app-icon.png" alt="" width="44" height="44">
+                <div>
+                  <p>Converted to Traditional</p>
+                  <strong>這句話是簡體中文。</strong>
+                </div>
+                <kbd>Control</kbd><kbd>Option</kbd><kbd>H</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="proof-strip" aria-label="Key benefits">
+        <article>
+          <span class="proof-icon lock" aria-hidden="true"></span>
+          <h2>Local conversion</h2>
+          <p>Conversion happens on your Mac. No network conversion, no servers, no text upload.</p>
+        </article>
+        <article>
+          <span class="proof-icon clipboard" aria-hidden="true"></span>
+          <h2>Clipboard protected</h2>
+          <p>The replacement flow is designed to restore your clipboard after conversion.</p>
+        </article>
+        <article>
+          <span class="proof-icon laptop" aria-hidden="true"></span>
+          <h2>macOS 13+</h2>
+          <p>Lightweight and native, with universal releases for Apple Silicon and Intel Macs.</p>
+        </article>
+      </section>
+
+      <section class="setup-section" id="setup" aria-labelledby="setup-title">
+        <div class="section-heading">
+          <p class="eyebrow">Get running</p>
+          <h2 id="setup-title">Three steps, then one shortcut.</h2>
+        </div>
+        <div class="setup-steps">
+          <article>
+            <span class="step-number">1</span>
+            <h3>Install</h3>
+            <p>Download the notarized DMG from GitHub Releases and drag HanToggle to Applications.</p>
+          </article>
+          <article>
+            <span class="step-number">2</span>
+            <h3>Enable Accessibility</h3>
+            <p>Allow HanToggle in System Settings so it can replace selected text in other apps.</p>
+          </article>
+          <article>
+            <span class="step-number">3</span>
+            <h3>Toggle text</h3>
+            <p>Select Chinese text and press your configured hotkey to switch scripts in place.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="privacy-section" id="privacy" aria-labelledby="privacy-title">
+        <div>
+          <p class="eyebrow">Private by design</p>
+          <h2 id="privacy-title">No analytics. No telemetry. No server conversion.</h2>
+        </div>
+        <p>
+          HanToggle treats selected text and clipboard contents as private user data. It does not log,
+          store, or transmit selected text, clipboard contents, or converted text.
+        </p>
+      </section>
+
+      <section class="download-section" aria-labelledby="download-title">
+        <div>
+          <p class="eyebrow">Open source</p>
+          <h2 id="download-title">A small utility built in the open.</h2>
+          <p>
+            HanToggle is MIT licensed. The conversion library, CLI harness, macOS app target,
+            tests, and release scripts are available on GitHub.
+          </p>
+        </div>
+        <div class="download-actions">
+          <a class="button button-primary" href="https://github.com/minorole/HanToggle/releases">
+            Download latest DMG
+          </a>
+          <a class="button button-secondary" href="mailto:hi@minor-role.com">Contact support</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>MIT License</span>
+      <a href="https://github.com/minorole/HanToggle">GitHub</a>
+      <a href="https://github.com/minorole/HanToggle/releases">Releases</a>
+    </footer>
+  </body>
+</html>
