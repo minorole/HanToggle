@@ -16,6 +16,13 @@ HanToggle uses the following third-party projects.
 - Bundled content: compiled conversion code and dictionary resources included through SwiftyOpenCC.
 - License: Apache License 2.0.
 
+## Lucide
+
+- Project: https://github.com/lucide-icons/lucide
+- Purpose: website proof-section icon SVG paths.
+- Version: 1.21.0.
+- License: ISC License.
+
 ## marisa-trie
 
 - Project: https://github.com/s-yata/marisa-trie
