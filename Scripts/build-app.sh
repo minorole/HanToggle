@@ -22,6 +22,16 @@ BUILD_ENTITLEMENTS="$BUILD_DIR/HanToggle.entitlements"
 APP_ICON="$PROJECT_DIR/Sources/HanToggleApp/Resources/HanToggle.icns"
 MENU_BAR_ICON="$PROJECT_DIR/Sources/HanToggleApp/Resources/MenuBarIconTemplate.png"
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
+PATH_MAP_ROOT="/HanToggle"
+BUILD_PATH_MAP_ROOT="/HanToggleBuild"
+SWIFT_BUILD_PATH_FLAGS=(
+    -Xswiftc -file-prefix-map
+    -Xswiftc "$PROJECT_DIR/Sources=$PATH_MAP_ROOT/Sources"
+    -Xcc "-fmacro-prefix-map=$PROJECT_DIR=$PATH_MAP_ROOT"
+    -Xcc "-fmacro-prefix-map=$SWIFTPM_BUILD_DIR=$BUILD_PATH_MAP_ROOT"
+    -Xcxx "-fmacro-prefix-map=$PROJECT_DIR=$PATH_MAP_ROOT"
+    -Xcxx "-fmacro-prefix-map=$SWIFTPM_BUILD_DIR=$BUILD_PATH_MAP_ROOT"
+)
 
 cd "$PROJECT_DIR"
 
@@ -82,10 +92,20 @@ swift package --scratch-path "$SWIFTPM_BUILD_DIR" resolve
 patch_swifty_opencc_checkout
 
 echo "Building HanToggleApp for arm64..."
-swift build -c release --product HanToggleApp --arch arm64 --scratch-path "$SWIFTPM_BUILD_DIR"
+swift build \
+    -c release \
+    --product HanToggleApp \
+    --arch arm64 \
+    --scratch-path "$SWIFTPM_BUILD_DIR" \
+    "${SWIFT_BUILD_PATH_FLAGS[@]}"
 
 echo "Building HanToggleApp for x86_64..."
-swift build -c release --product HanToggleApp --arch x86_64 --scratch-path "$SWIFTPM_BUILD_DIR"
+swift build \
+    -c release \
+    --product HanToggleApp \
+    --arch x86_64 \
+    --scratch-path "$SWIFTPM_BUILD_DIR" \
+    "${SWIFT_BUILD_PATH_FLAGS[@]}"
 
 echo "Creating universal binary..."
 lipo -create "$ARM_BINARY" "$X86_BINARY" -output "$APP_BINARY"
@@ -122,7 +142,7 @@ if [[ "$SIGN_IDENTITY" == "-" ]]; then
         "$APP_BUNDLE"
     echo "Warning: ad-hoc signatures may require resetting Accessibility permission after each rebuild." >&2
 else
-    echo "Signing app with identity: $SIGN_IDENTITY"
+    echo "Signing app with the configured Developer ID identity..."
     codesign \
         --force \
         --options runtime \
@@ -141,5 +161,7 @@ if [[ "$ARCH_INFO" != *"arm64"* || "$ARCH_INFO" != *"x86_64"* ]]; then
     echo "Universal binary verification failed. Expected arm64 and x86_64." >&2
     exit 1
 fi
+
+"$SCRIPT_DIR/check-public-boundary.sh" --artifact "$APP_BUNDLE"
 
 echo "Built $APP_BUNDLE"

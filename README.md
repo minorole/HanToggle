@@ -115,7 +115,7 @@ Example:
 TEAM_ID="YOURTEAMID" \
 SIGN_IDENTITY="Developer ID Application: Your Name (YOURTEAMID)" \
 NOTARY_PROFILE="notarization-profile" \
-VERSION="0.1.0" \
+VERSION="0.1.1" \
 Scripts/release.sh
 ```
 

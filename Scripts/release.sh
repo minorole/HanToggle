@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-0.1.1}"
 TEAM_ID="${TEAM_ID:-}"
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-notarization-profile}"
@@ -41,6 +41,8 @@ require_command xcrun
 require_command hdiutil
 require_command spctl
 require_command security
+require_command strings
+require_command mount
 
 require_env TEAM_ID
 require_env SIGN_IDENTITY
@@ -55,8 +57,10 @@ if [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
     exit 1
 fi
 
+"$SCRIPT_DIR/check-public-boundary.sh"
+
 if ! security find-identity -v -p codesigning | grep -F "$SIGN_IDENTITY" >/dev/null; then
-    echo "Signing identity not found: $SIGN_IDENTITY" >&2
+    echo "The configured signing identity was not found." >&2
     exit 1
 fi
 
@@ -65,6 +69,7 @@ swift test
 
 NOTARY_PROFILE="$NOTARY_PROFILE" "$SCRIPT_DIR/check-notarization.sh"
 "$SCRIPT_DIR/build-app.sh"
+"$SCRIPT_DIR/check-public-boundary.sh" --artifact "$APP_BUNDLE"
 
 ARCH_INFO="$(lipo -info "$APP_BINARY")"
 if [[ "$ARCH_INFO" != *"arm64"* || "$ARCH_INFO" != *"x86_64"* ]]; then
@@ -132,6 +137,21 @@ xcrun stapler validate "$DMG_PATH"
 
 echo "Verifying DMG with Gatekeeper..."
 spctl --assess --type open --context context:primary-signature -v "$DMG_PATH"
+
+echo "Scanning the final DMG payload for private paths..."
+DMG_VERIFY_MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/hantoggle-dmg-verify.XXXXXX")"
+cleanup_dmg_verify_mount() {
+    if mount | grep -F " on $DMG_VERIFY_MOUNT " >/dev/null 2>&1; then
+        hdiutil detach "$DMG_VERIFY_MOUNT" >/dev/null 2>&1 || true
+    fi
+    rmdir "$DMG_VERIFY_MOUNT" >/dev/null 2>&1 || true
+}
+trap cleanup_dmg_verify_mount EXIT
+hdiutil attach -readonly -nobrowse -mountpoint "$DMG_VERIFY_MOUNT" "$DMG_PATH" >/dev/null
+"$SCRIPT_DIR/check-public-boundary.sh" --artifact "$DMG_VERIFY_MOUNT/HanToggle.app"
+hdiutil detach "$DMG_VERIFY_MOUNT" >/dev/null
+rmdir "$DMG_VERIFY_MOUNT"
+trap - EXIT
 
 if [[ "$DRAFT_GITHUB_RELEASE" == "1" ]]; then
     echo "Drafting GitHub release v$VERSION..."

@@ -2,6 +2,18 @@
 
 All notable changes to HanToggle will be documented in this file.
 
+## Unreleased
+
+- No unreleased changes yet.
+
+## 0.1.1 - 2026-07-18
+
+### Privacy
+
+- Removed internal agent instructions, journals, planning documents, and production source artwork from public source history and GitHub Pages.
+- Rebuilt release binaries without developer-home or local source paths.
+- Added automated checks that reject local-only files, personal paths, credential markers, and AI process attribution before publication.
+
 ## 0.1.0 - 2026-06-09
 
 ### Added
@@ -22,7 +34,3 @@ All notable changes to HanToggle will be documented in this file.
 - Conversion remains local.
 - HanToggle does not include analytics, telemetry, update checks, or network conversion.
 - Selected text, converted text, and clipboard contents are not logged, persisted, or transmitted.
-
-## Unreleased
-
-- No unreleased changes yet.

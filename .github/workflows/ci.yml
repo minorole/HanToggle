@@ -17,6 +17,9 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      - name: Check public repository boundary
+        run: Scripts/check-public-boundary.sh
+
       - name: Build
         run: swift build
 

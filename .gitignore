@@ -14,6 +14,7 @@ docs/superpowers/
 
 # Website production source assets that should stay local unless explicitly promoted
 docs/assets/gif-storyboard/
+docs/assets/hantoggle-storyboard-core-v1.png
 docs/assets/*draft*.gif
 
 # SwiftPM and Xcode local state

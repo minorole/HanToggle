@@ -1,7 +1,7 @@
 # HanToggle 0.1.0 Manual QA
 
 Date: 2026-06-09 EDT
-Tester: Project owner
+Verification: Release checklist
 Build: `/Applications/HanToggle.app` installed from notarized `build/HanToggle-0.1.0.dmg`
 macOS version: 26.5.1 (25F80)
 Machine architecture: Apple Silicon (`arm64`)
