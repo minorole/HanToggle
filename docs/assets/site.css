@@ -131,6 +131,11 @@ a:hover {
   color: var(--cinnabar);
 }
 
+a:focus-visible {
+  outline: 0.1875rem solid var(--cinnabar);
+  outline-offset: 0.125rem;
+}
+
 h1,
 h2,
 h3,
@@ -223,28 +228,39 @@ p {
   background: rgba(255, 248, 234, 0.72);
 }
 
-.language-toggle {
-  min-width: 3.75rem;
+.language-links {
+  display: inline-flex;
+  align-items: stretch;
   min-height: 2.75rem;
-  padding: var(--space-0) var(--space-3);
+  overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: rgba(255, 248, 234, 0.72);
   color: var(--ink-soft);
-  font: inherit;
   font-weight: 800;
-  cursor: pointer;
 }
 
-.language-toggle:hover {
-  border-color: rgba(127, 33, 25, 0.42);
+.nav-links .language-links a,
+.language-current {
+  display: grid;
+  place-items: center;
+  min-width: 2.65rem;
+  min-height: 2.75rem;
+  padding: var(--space-0) var(--space-2);
+  border-radius: var(--space-0);
+}
+
+.language-links > * + * {
+  border-left: 1px solid var(--line);
+}
+
+.nav-links .language-links a:hover {
   background: rgba(255, 252, 245, 0.9);
-  color: var(--cinnabar-deep);
 }
 
-.language-toggle:focus-visible {
-  outline: 0.1875rem solid rgba(179, 49, 36, 0.36);
-  outline-offset: 0.125rem;
+.language-current {
+  background: var(--cinnabar-deep);
+  color: var(--white-ink);
 }
 
 .hero {
@@ -686,6 +702,54 @@ h1 {
   font-size: var(--text-sm) !important;
 }
 
+.faq-section {
+  padding: var(--panel-padding);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.76), rgba(248, 235, 211, 0.62)),
+    var(--paper);
+  box-shadow: 0 var(--space-4) var(--space-8) rgba(55, 35, 19, 0.08);
+}
+
+.faq-section .section-heading {
+  margin-bottom: var(--space-6);
+}
+
+.faq-section .section-heading h2 {
+  margin-bottom: var(--space-0);
+  font-family: var(--font-site);
+  font-size: clamp(1.65rem, 2.7vw, 2.35rem);
+  line-height: var(--leading-tight);
+}
+
+.faq-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+}
+
+.faq-list article {
+  padding: var(--space-5);
+  background: rgba(255, 250, 239, 0.8);
+}
+
+.faq-list h3 {
+  margin-bottom: var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+}
+
+.faq-list p {
+  margin-bottom: var(--space-0);
+  color: var(--muted);
+}
+
 @media (min-width: 1120px) {
   :root {
     --text-display: clamp(4.35rem, 5.4vw, 5.15rem);
@@ -879,7 +943,8 @@ h1 {
   }
 
   .proof-strip,
-  .setup-steps {
+  .setup-steps,
+  .faq-list {
     grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
   }
 
@@ -889,6 +954,10 @@ h1 {
 
   .setup-steps article {
     min-height: auto;
+    padding: var(--space-4);
+  }
+
+  .faq-list article {
     padding: var(--space-4);
   }
 

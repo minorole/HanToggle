@@ -2,6 +2,8 @@
 
 HanToggle is a lightweight macOS menu-bar utility for toggling selected Chinese text between Simplified and Traditional with a global hotkey.
 
+Website: [English](https://minorole.github.io/HanToggle/en/) · [简体中文](https://minorole.github.io/HanToggle/) · [繁體中文](https://minorole.github.io/HanToggle/zh-hant/)
+
 The intended workflow is:
 
 1. Select Chinese text in most apps that allow standard copy/paste events.

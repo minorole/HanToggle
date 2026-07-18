@@ -1,0 +1,26 @@
+# HanToggle
+
+> HanToggle is a free, open-source macOS menu-bar utility that toggles selected Chinese text between Simplified and Traditional with a configurable global hotkey.
+
+HanToggle performs conversion locally on the Mac. It does not use analytics, telemetry, update checks, network conversion, or text logging. It restores the previous clipboard contents after conversion whenever possible.
+
+## Official pages
+
+- [Simplified Chinese](https://minorole.github.io/HanToggle/): Product overview, setup, privacy, download, and FAQ in Simplified Chinese.
+- [Traditional Chinese](https://minorole.github.io/HanToggle/zh-hant/): Product overview, setup, privacy, download, and FAQ in Traditional Chinese.
+- [English](https://minorole.github.io/HanToggle/en/): Product overview, setup, privacy, download, and FAQ in English.
+- [Source code](https://github.com/minorole/HanToggle): Swift source, tests, documentation, and MIT License.
+- [Releases](https://github.com/minorole/HanToggle/releases): Current notarized DMG downloads and release notes.
+
+## Product facts
+
+- Platform: macOS 13 or later.
+- Hardware: Apple Silicon and Intel Macs.
+- Workflow: select Chinese text, press the configured hotkey, and press it again to reverse the conversion.
+- Distribution: free DMG downloads from GitHub Releases.
+- License: MIT.
+
+## Support and privacy
+
+- Support: hi@minor-role.com
+- Do not include private selected text, clipboard contents, credentials, tokens, keys, or personal data in support messages.
